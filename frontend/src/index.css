@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dicali-blue: #1e3a8a;
+  --color-dicali-accent: #3b82f6;
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* El efecto cristal que usaremos en el Navbar */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
