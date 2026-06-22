@@ -36,7 +36,7 @@ const CandidateMatching = () => {
           {matches.map((m, index) => (
             <div key={index} className="bg-white p-8 rounded-3xl shadow-lg border-l-8 border-green-500 flex justify-between items-center transition-all hover:scale-[1.02]">
               <div>
-                <h3 className="text-2xl font-black text-gray-800">{m.candidate.name}</h3>
+                <h3 className="text-2xl font-black text-gray-800">{m.candidate.fullName}</h3>
                 <p className="text-gray-500 font-bold">{m.candidate.education}</p>
                 <div className="flex gap-2 mt-3">
                   {m.candidate.skills.map((s, i) => (

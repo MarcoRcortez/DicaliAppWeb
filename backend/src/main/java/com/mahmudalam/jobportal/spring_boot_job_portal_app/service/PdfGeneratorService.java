@@ -20,12 +20,11 @@ public class PdfGeneratorService {
             Document document = new Document(pdf);
 
             document.add(new Paragraph("CURRICULUM VITAE DIGITAL - DICALI").setFontSize(20).setBold());
-            document.add(new Paragraph("Nombre: " + candidate.getName()));
+            document.add(new Paragraph("Nombre: " + candidate.getFullName()));
             document.add(new Paragraph("Correo: " + candidate.getEmail()));
             document.add(new Paragraph("Educación: " + candidate.getEducation()));
             document.add(new Paragraph("Experiencia: " + candidate.getExperienceYears() + " años"));
             document.add(new Paragraph("Habilidades: " + String.join(", ", candidate.getSkills())));
-            document.add(new Paragraph("Contacto WhatsApp: " + candidate.getWhatsappNumber()));
 
             document.close();
         } catch (Exception e) {

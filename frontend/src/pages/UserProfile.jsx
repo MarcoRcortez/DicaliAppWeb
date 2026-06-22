@@ -1,96 +1,104 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 
 const UserProfile = () => {
-  const [email, setEmail] = useState("");
-  const [user, setUser] = useState(null);
+  const [emailBusqueda, setEmailBusqueda] = useState("");
+  const [perfil, setPerfil] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = async () => {
+  const handleCargarPerfil = async () => {
+    if (!emailBusqueda.trim()) {
+      setError("Por favor, ingresa un correo electrónico.");
+      return;
+    }
+
     try {
-      const res = await axios.get(`http://localhost:8080/api/candidates/profile/${email}`);
-      if (res.data) {
-        setUser(res.data);
-      } else {
-        alert("No se encontró ningún perfil con ese correo.");
-      }
+      setLoading(true);
+      setError("");
+      setPerfil(null);
+
+      // Sincronizado con la ruta del CandidateController en Spring Boot
+      const response = await axios.get(
+        `http://localhost:8080/api/candidates/profile/${emailBusqueda.trim()}`
+      );
+      
+      setPerfil(response.data);
     } catch (err) {
-      console.error(err);
+      console.error("Error al buscar perfil:", err);
+      // Captura el mensaje de error enviado por el backend o usa uno por defecto
+      const msg = err.response?.status === 404 
+        ? "No se encontró ningún perfil con ese correo" 
+        : "Error de conexión con el servidor";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="px-4 pb-12 pt-32 max-w-4xl mx-auto">
-      {!user ? (
-        <div className="bg-white p-8 rounded-3xl shadow-xl text-center">
-          <h2 className="text-3xl font-black text-blue-900 mb-6 uppercase italic">Mi Perfil Profesional</h2>
-          <p className="text-gray-500 mb-6">Ingresa tu correo para visualizar tu CV Digital</p>
-          <div className="flex gap-2 max-w-md mx-auto">
-            <input 
-              type="email" 
-              placeholder="tu@correo.com" 
-              className="flex-1 border-2 p-3 rounded-xl outline-none focus:border-blue-500"
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button 
-              onClick={handleSearch}
-              className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-black transition-all"
-            >
-              Cargar
-            </button>
-          </div>
+    <div className="pt-32 min-h-screen bg-gray-50 flex flex-col items-center p-6">
+      <div className="bg-white p-8 rounded-[2rem] shadow-xl w-full max-w-md text-center">
+        <h2 className="text-3xl font-black text-blue-900 italic mb-6 uppercase">
+          Mi Perfil Profesional
+        </h2>
+        <p className="text-gray-500 mb-6">Visualiza tu CV Digital en DICALI</p>
+        
+        <div className="flex gap-2 mb-6">
+          <input
+            type="email"
+            placeholder="tu-correo@gmail.com"
+            className="flex-1 p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-blue-500 transition-all"
+            value={emailBusqueda}
+            onChange={(e) => setEmailBusqueda(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleCargarPerfil()}
+          />
+          <button 
+            onClick={handleCargarPerfil}
+            disabled={loading}
+            className={`bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold hover:bg-black transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {loading ? "..." : "Cargar"}
+          </button>
         </div>
-      ) : (
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
-          <div className="bg-blue-900 h-32 w-full"></div>
-          <div className="px-8 pb-8">
-            <div className="relative -top-12 flex flex-col md:flex-row md:items-end gap-6">
-              <div className="w-32 h-32 bg-blue-500 rounded-2xl border-4 border-white shadow-lg flex items-center justify-center text-white text-5xl font-black">
-                {user.name.charAt(0)}
-              </div>
-              <div className="md:mb-4">
-                <h1 className="text-4xl font-black text-gray-900 uppercase">{user.name}</h1>
-                <p className="text-blue-600 font-bold">{user.education}</p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="md:col-span-2 space-y-6">
-                <section>
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Habilidades Técnicas</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {user.skills.map((s, i) => (
-                      <span key={i} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200">
-                        {s}
+        {error && (
+          <div className="bg-red-50 text-red-500 p-4 rounded-xl font-bold mb-4 border border-red-100">
+            {error}
+          </div>
+        )}
+
+        {perfil && (
+          <div className="text-left bg-blue-50 p-6 rounded-3xl border border-blue-100 animate-fade-in shadow-inner">
+            {/* CORRECCIÓN: Usamos fullName y whatsapp que coinciden con CandidateModel.java */}
+            <h3 className="text-xl font-black text-blue-900 uppercase mb-4 border-b border-blue-200 pb-2">
+              {perfil.fullName || "Sin nombre"}
+            </h3>
+            
+            <div className="space-y-3 text-sm text-blue-800">
+              <p><strong>📧 Email:</strong> {perfil.email}</p>
+              <p><strong>📱 WhatsApp:</strong> {perfil.whatsapp}</p>
+              <p><strong>🎓 Título:</strong> {perfil.education}</p>
+              <p><strong>⏳ Experiencia:</strong> {perfil.experienceYears} años</p>
+              
+              <div className="pt-2">
+                <strong className="block mb-2 text-xs uppercase tracking-widest text-blue-400">Habilidades Técnicas</strong>
+                <div className="flex flex-wrap gap-2">
+                  {perfil.skills && perfil.skills.length > 0 ? (
+                    perfil.skills.map((skill, index) => (
+                      <span key={index} className="bg-white px-3 py-1 rounded-full text-[10px] font-black text-blue-600 shadow-sm border border-blue-100">
+                        {skill}
                       </span>
-                    ))}
-                  </div>
-                </section>
-                
-                <section className="bg-blue-50 p-6 rounded-2xl">
-                  <h3 className="text-blue-900 font-bold mb-2">Resumen de Experiencia</h3>
-                  <p className="text-blue-800 text-sm">
-                    Actualmente cuento con <span className="font-black">{user.experienceYears} años</span> de experiencia profesional en el sector tecnológico de Bolivia.
-                  </p>
-                </section>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                  <h3 className="text-sm font-bold text-gray-800 mb-4 uppercase">Contacto</h3>
-                  <p className="text-gray-500 text-sm mb-2">📧 {user.email}</p>
-                  <p className="text-gray-500 text-sm">📱 {user.whatsappNumber}</p>
+                    ))
+                  ) : (
+                    <span className="text-gray-400 italic">No especificadas</span>
+                  )}
                 </div>
-                <button 
-                  onClick={() => window.open(`http://localhost:8080/api/candidates/download/${user.email}`)}
-                  className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
-                >
-                  📥 Descargar CV (PDF)
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

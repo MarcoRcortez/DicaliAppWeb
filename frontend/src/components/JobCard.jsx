@@ -1,35 +1,34 @@
 import React from 'react';
 
 const JobCard = ({ job }) => {
-  return (
-    <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase">
-            {job.category || "General"}
-          </span>
-          <h3 className="text-xl font-bold text-gray-800 mt-2">{job.title}</h3>
+    return (
+        <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-100 hover:scale-105 transition-transform duration-300">
+            <div className="flex justify-between items-start mb-6">
+                <div className="bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 font-black">
+                    {job.companyName?.charAt(0)}
+                </div>
+                <span className="bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-xs font-black uppercase">
+                    {job.salary} Bs.
+                </span>
+            </div>
+
+            <h3 className="text-xl font-black text-slate-800 leading-tight mb-2 uppercase italic tracking-tighter">
+                {job.title}
+            </h3>
+            <p className="text-indigo-600 font-bold text-sm mb-4">
+                🏢 {job.companyName}
+            </p>
+
+            <div className="flex items-center justify-between border-t border-gray-50 pt-4">
+                <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-lg">
+                    {job.category} {/* <-- Campo corregido segun tu Compass */}
+                </span>
+                <button className="bg-slate-900 text-white px-5 py-2 rounded-xl text-[10px] font-black hover:bg-indigo-600 transition-colors uppercase">
+                    Ver Detalles
+                </button>
+            </div>
         </div>
-        <div className="text-blue-600 font-bold">
-          {job.salary ? `Bs. ${job.salary}` : "Sueldo a convenir"}
-        </div>
-      </div>
-      
-      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-        {job.description || "Sin descripción disponible."}
-      </p>
-      
-      <div className="flex items-center text-gray-500 text-xs gap-4 mb-6">
-        <span className="flex items-center gap-1">🏢 {job.company}</span>
-        <span className="flex items-center gap-1">📍 {job.location}</span>
-        <span className="flex items-center gap-1">⏱️ {job.type}</span>
-      </div>
-      
-      <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors">
-        Postular ahora
-      </button>
-    </div>
-  );
+    );
 };
 
 export default JobCard;
