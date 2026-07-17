@@ -1,0 +1,53 @@
+# ── Plantilla de configuración de DICALI ──
+# Copia este archivo a `application.properties` (mismo directorio) y completa los
+# valores marcados como CAMBIAR_*. El application.properties real está en .gitignore
+# porque contiene secretos.
+
+spring.application.name=spring-boot-job-portal-app
+
+# ── MongoDB (local) ──
+spring.data.mongodb.uri=mongodb://localhost:27017/job_portal_db
+spring.data.mongodb.database=job_portal_db
+
+server.port=8080
+
+# ── JWT ──
+# Debe tener al menos 256 bits (32+ caracteres). Genera una cadena aleatoria propia.
+jwt.secret=CAMBIAR_POR_UNA_CLAVE_SECRETA_DE_AL_MENOS_32_CARACTERES
+jwt.expiration=86400000
+
+# ── Spring Security (desactiva el login por defecto de Spring) ──
+spring.security.user.name=admin
+spring.security.user.password=admin
+
+# ── Mail (opcional: solo si quieres notificaciones por correo) ──
+# Para Gmail usa una "contraseña de aplicación", no la contraseña normal.
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=${MAIL_USER:CAMBIAR_correo@ejemplo.com}
+spring.mail.password=${MAIL_PASS:CAMBIAR_password_de_aplicacion}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# ── CORS (origen del frontend Vite) ──
+spring.web.cors.allowed-origins=http://localhost:5173
+
+# ── Ollama (LLM local para explicaciones de match) ──
+# Opcional: sin Ollama la app funciona igual (explicación de respaldo determinística).
+# Para habilitar el LLM real: `ollama pull gemma3:1b` (Ollama arranca solo en Windows/Mac).
+ollama.base-url=http://localhost:11434
+ollama.model=gemma3:1b
+ollama.connect-timeout-ms=3000
+ollama.read-timeout-ms=60000
+ollama.enabled=true
+
+# ── Pesos del motor de matching (deben sumar 1.0) ──
+matching.weights.technical=0.55
+matching.weights.soft=0.20
+matching.weights.experience=0.10
+matching.weights.salary=0.05
+matching.weights.work-type=0.05
+matching.weights.language=0.05
+
+# ── Logging ──
+logging.level.com.mahmudalam=INFO

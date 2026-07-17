@@ -10,15 +10,12 @@ structured candidate CVs and company vacancies, a **weighted candidate↔vacancy
 an optional **local-LLM (Ollama) natural-language explanation** of each match score. Candidates can also
 export their CV to PDF client-side.
 
-**Important — two systems live in this repo, only one is real.** There is an older, *dead* codebase
-(simple `CandidateModel`/`CompanyModel`/`JobPostModel`, `MatchingService`, pages like `CreatePost.jsx`)
-that is **not routed in `App.jsx`** and has no live caller. Everything below marked "legacy/dead" exists
-only as leftovers. The [README.md](README.md) and its "API Endpoints" section describe that original
-design and are historical, not authoritative. When in doubt, trust the routed pages in `App.jsx` and the
-`/api/*-profiles`, `/api/vacancies`, `/api/matches`, `/api/auth`, `/api/admin` endpoints.
-
-There used to be a second, competing backend (`backend/server.js`, an Express + Mongoose script). It has
-been removed — **Spring Boot is the single backend**.
+**History:** this repo started from an upstream job-board template and once carried a parallel *dead*
+codebase (simple `CandidateModel`/`CompanyModel`/`JobPostModel`, `MatchingService`, orphaned pages like
+`CreatePost.jsx`) plus a second Express backend (`backend/server.js`). All of that has been **removed** —
+**Spring Boot is the single backend** and every routed page maps to the live endpoints below. If old
+notes/history mention `/api/candidates|companies|jobPosts`, `MatchingService`, or those pages, they're
+stale.
 
 ## Common commands
 
@@ -60,8 +57,7 @@ Backend Java package root: `com.mahmudalam.jobportal.spring_boot_job_portal_app`
   `CANDIDATE`/`RECRUITER`/`ADMIN`), returns a JWT (`{token, role, userId, email}`), plus a
   security-question password-reset flow. `JwtAuthFilter` validates the bearer token on every request;
   `SecurityConfig` sets what's public vs. authenticated:
-  - Public: `/api/auth/**`, `GET /api/vacancies/public/**`, swagger, and the dead legacy endpoints
-    (`/api/candidates|companies|jobPosts/**`) kept only for backward compat.
+  - Public: `/api/auth/**`, `GET /api/vacancies/public/**`, swagger.
   - Authenticated: `/api/candidate-profiles/**`, `/api/company-profiles/**`, `/api/vacancies/**`
     (non-public), `/api/matches/**`.
   - `ROLE_ADMIN` only: `/api/admin/**`.
@@ -107,15 +103,6 @@ Backend Java package root: `com.mahmudalam.jobportal.spring_boot_job_portal_app`
   `CandidateProfileRepository`, `CompanyProfileRepository`, `VacancyRepository`, `MatchRepository`). This
   is the only repository layer.
 
-### Backend — DEAD / legacy (do not build on, do not delete unprompted)
-
-These exist but are **not reachable** and are not part of the live system: controllers
-`CandidateController`/`CompanyController`/`JobPostController`, service `MatchingService` (simple 2-criteria
-average — NOT the real engine), models `CandidateModel`/`CompanyModel`/`JobPostModel`/`CandidateMatchDTO`,
-and `PdfGeneratorService` (iText 7 CV builder, never called — the PDF is generated client-side instead).
-Their endpoints (`/api/candidates|companies|jobPosts`) stay public for backward compat but have no live
-frontend caller. If old notes reference these as current, they're stale.
-
 ### Frontend (`frontend/src/`)
 
 - **Auth is real**: `components/ProtectedRoute.jsx` gates routes on `useAuthStore()` (`token` + `role`),
@@ -129,13 +116,9 @@ frontend caller. If old notes reference these as current, they're stale.
     (ranked candidates + explanation), `/company/mi-empresa` `MiEmpresa`, `/company/reclutar`
     `Reclutar.jsx` (create/edit vacancy: skills, languages, certifications, min-years).
   - `/admin` `AdminPanel` (role `ADMIN`), `*` `NotFound`.
-  - Pages NOT imported here (`CreatePost.jsx`, `RegisterCandidate.jsx`, `Feed.jsx`, `JobBoard.jsx`,
-    `CandidateProfile.jsx`, `UserProfile.jsx`, `AdminJobs.jsx`, `AdminDashboard.jsx`, `AuditCompanies.jsx`,
-    `PostJob.jsx`, `CompanyPanel.jsx`) are orphaned/dead.
-- `api/api.js` — single source of truth for API calls (axios instance that injects the JWT). Live
-  functions cover `/auth`, `/candidate-profiles`, `/company-profiles`, `/vacancies`, `/matches`,
-  `/admin`; a clearly marked `// ─── LEGACY ───` section holds the dead `/jobPosts|/companies|/candidates`
-  helpers used only by the orphaned pages.
+  - Live `components/`: only `Navbar` and `ProtectedRoute` (plus page-local UI).
+- `api/api.js` — single source of truth for API calls (axios instance that injects the JWT). Functions
+  cover `/auth`, `/candidate-profiles`, `/company-profiles`, `/vacancies`, `/matches`, `/admin`.
 - Candidates fill their CV via **structured forms** in `MiCurriculum.jsx` (deliberate: no free-text CV
   parsing). The CV PDF is generated client-side with `jsPDF`.
 - Styling is Tailwind v4 via `@tailwindcss/vite` (see `vite.config.js`), not the v3 PostCSS pipeline.

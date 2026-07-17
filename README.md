@@ -1,240 +1,92 @@
-# 💼 Job Portal App - Java Spring Boot with REST APIs, ReactJS, MongoDB
+# DICALI — Plataforma de Reclutamiento Inteligente
 
-## 📌 Project Overview
-**Job Portal App** is a simple full-stack web application designed to help users browse job listings and create new job posts. It is built using **Java Spring Boot** for the backend, **ReactJS** for the frontend, and **MongoDB** for data persistence.
+DICALI es un portal de empleo full-stack que conecta **candidatos** con **empresas** mediante un
+**motor de matching ponderado** y explica cada resultado en lenguaje natural usando un **modelo de
+lenguaje local (Ollama)**. Cuentas por rol con autenticación JWT real, CV estructurado, vacantes con
+requisitos detallados y exportación del CV a PDF.
 
-This project demonstrates how to create a modular and scalable application using a modern technology stack, implementing essential CRUD operations with pagination and keyword-based searching.
+## Características
 
----
+- **Autenticación real (JWT)** con tres roles: `CANDIDATE`, `RECRUITER`, `ADMIN` (contraseñas con
+  bcrypt y recuperación por pregunta de seguridad).
+- **CV estructurado del candidato**: experiencia laboral con fechas, educación, habilidades técnicas
+  (con nivel), habilidades blandas, idiomas (A1–C2/Nativo), certificaciones, expectativa salarial y
+  disponibilidad. Exportable a **PDF** desde el navegador.
+- **Vacantes**: habilidades técnicas requeridas (con nivel), habilidades blandas, idiomas requeridos,
+  certificaciones deseadas, años mínimos de experiencia, rango salarial y modalidad.
+- **Motor de matching ponderado y configurable** (6 criterios): técnicas 55%, blandas 20%,
+  experiencia 10%, salario 5%, modalidad 5%, idiomas 5%. Los pesos se ajustan por configuración sin
+  recompilar. El score se calcula de forma **determinística** (reproducible).
+- **Explicación del match con IA local (opcional)**: un LLM (Ollama, `gemma3:1b`) redacta *por qué* un
+  candidato encaja con una vacante. Si Ollama no está disponible, se usa una explicación de respaldo
+  determinística — la app funciona igual. **El LLM solo redacta; nunca calcula el score.**
+- **Panel de administración**: estadísticas y gestión de usuarios, vacantes, perfiles y empresas.
 
-## 🚀 Features
+## Stack
 
-- 🔍 **Job Feed Page**: View all available job posts fetched from a local MongoDB database.
-- 🔎 **Search Functionality**: Filter job posts based on keywords like `Java`, `Python`, etc.
-- 📄 **Pagination**: Display 6 jobs per page with clickable page numbers for easy navigation.
-- 📝 **Create Job Post**: Submit new job listings through a form and store them in MongoDB.
+| Capa      | Tecnología |
+|-----------|------------|
+| Backend   | Java 17, Spring Boot 3.2.3, Spring Security + JWT, Spring Data MongoDB |
+| Base de datos | MongoDB (local) |
+| Frontend  | React + Vite, React Router, Zustand, Tailwind CSS v4, Axios, jsPDF |
+| IA (opcional) | Ollama con el modelo `gemma3:1b` |
 
----
+## Requisitos
 
-## 🛠️ Tech Stack
+- **Java 17+** y Maven
+- **Node.js + npm**
+- **MongoDB** corriendo localmente en `mongodb://localhost:27017`
+- *(Opcional)* **Ollama** para las explicaciones con LLM real:
+  ```bash
+  ollama pull gemma3:1b
+  ```
+  En Windows/Mac, Ollama arranca solo como servicio (no necesitas `ollama serve`).
 
-### Backend
-- [Java Spring Boot](https://start.spring.io/)
-- Spring Web (REST APIs)
-- Spring Data MongoDB
-- Swagger-UI
-- Maven
+## Instalación y ejecución
 
-### Frontend
-- [ReactJS](https://reactjs.org/)
-- Axios for HTTP requests
-- React Router for navigation
-- TailwindCSS for styling
-
-### Database
-- [MongoDB](https://www.mongodb.com/) (running locally)
-
----
-
-## 📸 Project Screenshots
-
-### 🏠 Home Page
-The Landing Page of the Job Portal Platform.
-![Home Page](https://github.com/Mahmud-Alam/spring-boot-job-portal-app/blob/main/screenshots/01.png)
-
-### 📝 Job Creating Form Page
-`POST` - Create a new job
-![Job Creating Form Page](https://github.com/Mahmud-Alam/spring-boot-job-portal-app/blob/main/screenshots/02.png)
-
-### 💼 Job Listings
-`GET` - All job posts Listing here.
-![Job Listings](https://github.com/Mahmud-Alam/spring-boot-job-portal-app/blob/main/screenshots/03.png)
-
-### 🔍 Search Job Post by Keyword  
-`GET` - Search job listings by entering a keyword related to title, description, or company.  
-![Search Job](https://github.com/Mahmud-Alam/spring-boot-job-portal-app/blob/main/screenshots/04.png)
-
-### 🧪 Swagger UI  
-A developer-friendly interface to test and explore all RESTful APIs.  
-Access via: `/swagger-ui.html`
-![Swagger UI](https://github.com/Mahmud-Alam/spring-boot-job-portal-app/blob/main/screenshots/05.png)
-
-### ❌ 404 - Not Found Page  
-Displays a user-friendly message when an invalid URL is visited.  
-![404 Page](https://github.com/Mahmud-Alam/spring-boot-job-portal-app/blob/main/screenshots/06.png)
-
----
-
-## 🏗️ Project Structure
-### 🔙 Backend (Spring Boot)
-
-```
-job-portal-backend/
-├── src
-│   ├── main
-│   │   ├── java
-│   │   │   └── com.mahmudalam.jobportal.spring_boot_job_portal_app
-│   │   │       ├── controller
-│   │   │       ├── interfaces
-│   │   │       ├── model
-│   │   │       └── SpringBootJobPortalAppApplication.java
-│   │   └── resources
-│   │       ├── application.properties
-│   │       ├── static/
-│   │       └── templates/
-│   └── test
-│       └── java
-│           └── com.mahmudalam.jobportal.spring_boot_job_portal_app
-├── .env
-└── pom.xml
-
-```
-
-### 🌐 Frontend (ReactJS)
-
-```
-job-portal-frontend/
- ├── public/
- ├── src/
- │   ├── api/
- │   ├── components/
- │   ├── pages/
- │   ├── App.jsx
- │   └── main.jsx 
- ├── package.json
-
-```
-
----
-
-## 🔧 Installation & Setup
-
-### 📌 Prerequisites
-Ensure you have the following installed:
-- **Java 17+**
-- **Node.js & npm**
-- **MongoDB installed locally or access to MongoDB Atlas**
-
-### 🔽 Backend Setup
+### 1. Backend (desde `backend/`)
 
 ```bash
-git clone https://github.com/Mahmud-Alam/spring-boot-job-portal-app.git
-cd spring-boot-job-portal-app
-cd backend
+# Copiar la plantilla de configuración y completar los secretos (jwt.secret, etc.)
+cp src/main/resources/application.properties.example src/main/resources/application.properties
+
+mvn spring-boot:run          # API en http://localhost:8080
 ```
 
-The Spring Boot app will start at **[http://localhost:8080](http://localhost:8080)**
+Otros comandos: `mvn test` (tests), `mvn package` (jar).
 
+> El `application.properties` real está en `.gitignore` porque contiene secretos. La plantilla
+> `application.properties.example` trae valores por defecto que funcionan; solo debes reemplazar
+> `jwt.secret` (y, si usas correo, las credenciales de mail).
 
-#### 🧪 Configure Environment
-
-Edit `application.properties`:
-
-```properties
-spring.application.name=spring-boot-job-portal-app
-spring.data.mongodb.uri=mongodb://localhost:27017/job_portal_db
-spring.data.mongodb.database=job_portal_db
-```
-
-### 🌐 Frontend Setup
+### 2. Frontend (desde `frontend/`)
 
 ```bash
-cd frontend
 npm install
-npm run dev
+npm run dev                  # Vite en http://localhost:5173
 ```
 
-The React app will start at **[http://localhost:5173](http://localhost:5173)**
+Otros comandos: `npm run build` (build de producción), `npm run lint` (ESLint).
 
----
+## Cómo usar
 
-## 📘 API Documentation
+1. Entra a `http://localhost:5173` y regístrate como **candidato** o **empresa**.
+2. **Candidato** → *Mi Currículum*: llena tu CV estructurado (incluye idiomas y certificaciones).
+   En *Empleos* ves las vacantes con tu **% de compatibilidad** y el botón *"¿Por qué este match?"*.
+3. **Empresa** → *Mi Empresa* (registra tus datos) y luego *Reclutar* (crea vacantes). En *Postulantes*
+   ves a los candidatos rankeados por compatibilidad, con su explicación.
 
-Once the application is running, Swagger UI can be accessed at:
+## Documentación de la API
 
-```
-http://localhost:8080/swagger-ui.html
-```
+Con el backend corriendo, Swagger UI está en `http://localhost:8080/swagger-ui.html`.
+Endpoints principales: `/api/auth`, `/api/candidate-profiles`, `/api/company-profiles`,
+`/api/vacancies`, `/api/matches` (incluye `GET /api/matches/{id}/explanation`), `/api/admin`.
 
-It includes all endpoints, models, and schemas.
+## Arquitectura (resumen)
 
----
-
-## 🧪 Testing
-
-Run unit and integration tests using:
-
-```bash
-# Maven
-mvn test
-
-# Gradle
-./gradlew test
-```
-
----
-
-## 📜 API Endpoints
-
-### GET `/job-posts`
-### GET `/job-posts/{text}`
-
-* Fetch all jobs with optional keyword filtering and pagination.
-* Supports query parameters:
-
-  * `keyword`: Search term
-  * `page`: Page number (starting from 1)
-  * `limit`: Number of jobs per page (default: 6)
-
-### POST `/create-job-post`
-
-* Create a new job post
-* Accepts JSON payload:
-
-```json
-{
-  "profile": "Java Spring Boot Developer",
-  "desc": "We are hiring Java Spring Boot developers!",
-  "exp": 2,
-  "techs": ["Java", "Spring Boot"]
-}
-```
-
----
-
-## 🔮 Future Improvements
-
-* Add authentication (JWT-based)
-* Enable role-based access (Job Seeker vs Employer)
-* Add job details page
-* Improve form validation and error handling
-* Deploy on cloud (Render, vercel, or Heroku)
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please open an issue first to discuss what you would like to change.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/NewFeature`)
-3. Commit your changes (`git commit -m 'Add some new Features'`)
-4. Push to the branch (`git push origin feature/NewFeature`)
-5. Open a Pull Request
-
----
-
-## 🏆 Author
-**Mahmud Alam**  
-- 🌍 Portfolio: [Mahmud Alam](https://mahmudalam.com/)  
-- 📧 Email: mahmudalam.official@gmail.com  
-- 🔗 **GitHub:** [GitHub](https://github.com/Mahmud-Alam)  
-- 🔗 **LinkedIn:** [LinkedIn](https://www.linkedin.com/in/mahmudalamofficial/)  
-
----
-
-## 🎉 Acknowledgments
-- Inspired by Job Portal platforms.
-- Thanks to the **Java Spring Boot Community** for extensive documentation and support.
-
-#### Happy coding! 🚀
+- **Matching**: `service/MatchingEngine` calcula un score ponderado 0–100 por 6 criterios; persiste un
+  `MatchModel` por par candidato–vacante. Pesos vía `matching.weights.*`.
+- **IA**: `service/OllamaService` (cliente a prueba de fallos — nunca rompe el matching) +
+  `service/MatchExplanationService` (genera la explicación on-demand, la cachea en el `MatchModel` y cae
+  al respaldo determinístico si el LLM no responde).
+- Ver [CLAUDE.md](CLAUDE.md) para el detalle de modelos, controladores y servicios.
