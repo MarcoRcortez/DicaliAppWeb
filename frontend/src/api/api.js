@@ -62,12 +62,4 @@ export const getAdminProfiles = () => API.get("/admin/profiles");
 export const deleteAdminProfile = (id) => API.delete(`/admin/profiles/${id}`);
 export const getAdminCompanies = () => API.get("/admin/companies");
 
-// ─── LEGACY (compatibilidad con páginas antiguas) ────────────────────────────
-export const fetchJobs = () => API.get("/jobPosts/all");
-export const createJobPost = (job) => API.post("/jobPosts/register", job);
-export const fetchCompanies = () => API.get("/companies/all");
-export const registerCompany = (company) => API.post("/companies/register", company);
-export const registerCandidate = (candidate) => API.post("/candidates/register", candidate);
-export const fetchCandidateByEmail = (email) => API.get(`/candidates/profile/${email}`);
-
 export default API;

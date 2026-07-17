@@ -44,8 +44,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/company-profiles/**").authenticated()
                 .requestMatchers("/api/vacancies/**").authenticated()
                 .requestMatchers("/api/matches/**").authenticated()
-                // Endpoints legacy (mantener compatibilidad)
-                .requestMatchers("/api/candidates/**", "/api/companies/**", "/api/jobPosts/**").permitAll()
                 // Admin solo para ADMIN
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Todo lo demás requiere autenticación
