@@ -27,7 +27,7 @@ const calcAge = (dateStr) => {
 const emptyForm = {
   fullName: "", email: "", phone: "", location: "La Paz", birthDate: "",
   photoBase64: "", workExperience: [], educations: [], technicalSkills: [],
-  softSkills: [], languages: [], expectedSalary: { min: 0, max: 0 },
+  softSkills: [], languages: [], certifications: [], expectedSalary: { min: 0, max: 0 },
   availability: "tiempo completo", workSchedule: "tiempo completo",
   workType: "presencial La Paz", profileComplete: false,
 };
@@ -48,6 +48,7 @@ const MiCurriculum = () => {
 
   const [newExp, setNewExp] = useState({ title: "", company: "", startDate: "", endDate: "", current: false, achievements: [""] });
   const [newEdu, setNewEdu] = useState({ degree: "", institution: "", year: "" });
+  const [newCert, setNewCert] = useState({ name: "", institution: "", year: "" });
 
   useEffect(() => { loadProfile(); }, [userId]);
 
@@ -160,6 +161,17 @@ const MiCurriculum = () => {
   };
   const removeEducation = (i) => setForm((p) => ({ ...p, educations: p.educations.filter((_, idx) => idx !== i) }));
 
+  // ── CERTIFICACIONES ──
+  const addCertification = () => {
+    if (!newCert.name.trim() || !newCert.institution.trim()) {
+      alert("Completa el nombre y la institución de la certificación.");
+      return;
+    }
+    setForm((p) => ({ ...p, certifications: [...p.certifications, newCert] }));
+    setNewCert({ name: "", institution: "", year: "" });
+  };
+  const removeCertification = (i) => setForm((p) => ({ ...p, certifications: p.certifications.filter((_, idx) => idx !== i) }));
+
   // ── VALIDAR ANTES DE GUARDAR ──
   const validate = () => {
     const errs = {};
@@ -257,6 +269,12 @@ const MiCurriculum = () => {
     if (form.educations?.length > 0) {
       addSection("EDUCACIÓN");
       form.educations.forEach((e) => addLine(10, false, `${e.degree}  -  ${e.institution} (${e.year})`));
+    }
+
+    // Certificaciones
+    if (form.certifications?.length > 0) {
+      addSection("CERTIFICACIONES");
+      form.certifications.forEach((c) => addLine(10, false, `${c.name}  -  ${c.institution}${c.year ? ` (${c.year})` : ""}`));
     }
 
     // Habilidades técnicas
@@ -411,6 +429,25 @@ const MiCurriculum = () => {
               <div className="flex gap-2">
                 <input value={newEdu.year} onChange={(e) => setNewEdu((p) => ({ ...p, year: e.target.value }))} type="number" min="1970" max={new Date().getFullYear()} placeholder="Año" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <button onClick={addEducation} className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded-lg font-bold hover:bg-blue-100 whitespace-nowrap">+ Agregar</button>
+              </div>
+            </div>
+          </section>
+
+          {/* CERTIFICACIONES */}
+          <section>
+            <h2 className="text-lg font-black text-blue-900 mb-3">Certificaciones</h2>
+            {form.certifications.map((c, i) => (
+              <div key={i} className="flex items-center gap-3 mb-2 bg-gray-50 p-3 rounded-xl">
+                <span className="flex-1 text-sm"><strong>{c.name}</strong> — {c.institution}{c.year ? ` (${c.year})` : ""}</span>
+                <button onClick={() => removeCertification(i)} className="text-red-400 hover:text-red-600 text-xs">Eliminar</button>
+              </div>
+            ))}
+            <div className="grid grid-cols-3 gap-3">
+              <input value={newCert.name} onChange={(e) => setNewCert((p) => ({ ...p, name: e.target.value }))} placeholder="Certificación" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={newCert.institution} onChange={(e) => setNewCert((p) => ({ ...p, institution: e.target.value }))} placeholder="Institución" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <div className="flex gap-2">
+                <input value={newCert.year} onChange={(e) => setNewCert((p) => ({ ...p, year: e.target.value }))} type="number" min="1970" max={new Date().getFullYear()} placeholder="Año (opcional)" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <button onClick={addCertification} className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded-lg font-bold hover:bg-blue-100 whitespace-nowrap">+ Agregar</button>
               </div>
             </div>
           </section>

@@ -10,6 +10,7 @@ import {
   rejectMatch,
   getMatchesForCandidate,
   getCompanyProfile,
+  getMatchExplanation,
 } from "../api/api";
 
 const Empleos = () => {
@@ -25,8 +26,20 @@ const Empleos = () => {
   const [viewVacancy, setViewVacancy] = useState(null);
   const [contactPopup, setContactPopup] = useState(null);
   const [contactLoading, setContactLoading] = useState(false);
+  const [explanations, setExplanations] = useState({});
+  const [explLoading, setExplLoading] = useState(null);
 
   useEffect(() => { loadData(); }, [userId]);
+
+  const loadExplanation = async (matchId) => {
+    if (!matchId || explanations[matchId]) return;
+    setExplLoading(matchId);
+    try {
+      const res = await getMatchExplanation(matchId);
+      setExplanations((p) => ({ ...p, [matchId]: res.data.explanation }));
+    } catch { /* ignorar */ }
+    setExplLoading(null);
+  };
 
   const openContact = async (vacancy) => {
     setContactLoading(true);
@@ -148,10 +161,32 @@ const Empleos = () => {
                 </div>
               )}
 
+              {viewVacancy.requiredLanguages?.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Idiomas Requeridos</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {viewVacancy.requiredLanguages.map((l, i) => (
+                      <span key={i} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm">{l.name} <span className="text-xs opacity-60">({l.level})</span></span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {viewVacancy.desiredCertifications?.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Certificaciones Deseadas</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {viewVacancy.desiredCertifications.map((c, i) => (
+                      <span key={i} className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm">{c}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4 mt-5">
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-xs text-gray-400 font-bold">Experiencia</p>
-                  <p className="text-sm font-bold text-gray-700">{viewVacancy.experienceLevel || "-"}</p>
+                  <p className="text-sm font-bold text-gray-700">{viewVacancy.experienceLevel || "-"}{viewVacancy.minExperienceYears ? ` (${viewVacancy.minExperienceYears}+ años)` : ""}</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-xs text-gray-400 font-bold">Disponibilidad</p>
@@ -176,6 +211,16 @@ const Empleos = () => {
                   </div>
                   <div className="w-full bg-blue-100 rounded-full h-2 mt-2">
                     <div className="h-2 rounded-full bg-blue-500 transition-all" style={{ width: `${Math.round(candidateScores[viewVacancy.id].score)}%` }}></div>
+                  </div>
+                  <div className="mt-2">
+                    {!explanations[candidateScores[viewVacancy.id].id] && (
+                      <button onClick={() => loadExplanation(candidateScores[viewVacancy.id].id)} className="text-xs text-blue-600 hover:underline font-bold">
+                        {explLoading === candidateScores[viewVacancy.id].id ? "Generando explicación..." : "¿Por qué este match?"}
+                      </button>
+                    )}
+                    {explanations[candidateScores[viewVacancy.id].id] && (
+                      <p className="text-xs text-gray-600 mt-1 italic">{explanations[candidateScores[viewVacancy.id].id]}</p>
+                    )}
                   </div>
                 </div>
               )}

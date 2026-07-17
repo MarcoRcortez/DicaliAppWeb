@@ -5,11 +5,14 @@ import useAuthStore from "../store/authStore";
 import { getCompanyProfile, createVacancy, checkCompanyRegistered, getMyVacancies, deleteVacancy, updateVacancy } from "../api/api";
 
 const SKILL_LEVELS = ["BASICO", "INTERMEDIO", "AVANZADO", "EXPERTO"];
+const LANGUAGE_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2", "Nativo"];
 
 const emptyForm = {
   jobTitle: "", department: "", description: "",
   requiredTechnicalSkills: [], desiredSoftSkills: [],
+  requiredLanguages: [], desiredCertifications: [],
   experienceLevel: "con experiencia",
+  minExperienceYears: 0,
   salaryRange: { min: 0, max: 0 },
   workAvailability: "tiempo completo",
   closingDate: "", status: "Abierta",
@@ -31,6 +34,9 @@ const Reclutar = () => {
   const [newSkill, setNewSkill] = useState("");
   const [newSkillLevel, setNewSkillLevel] = useState("INTERMEDIO");
   const [newSoftSkill, setNewSoftSkill] = useState("");
+  const [newLang, setNewLang] = useState("");
+  const [newLangLevel, setNewLangLevel] = useState("B1");
+  const [newCert, setNewCert] = useState("");
 
   useEffect(() => { checkCompany(); }, [userId]);
 
@@ -69,6 +75,20 @@ const Reclutar = () => {
     setNewSoftSkill("");
   };
   const removeSoftSkill = (i) => setForm((p) => ({ ...p, desiredSoftSkills: p.desiredSoftSkills.filter((_, idx) => idx !== i) }));
+
+  const addLanguage = () => {
+    if (!newLang.trim()) return;
+    setForm((p) => ({ ...p, requiredLanguages: [...p.requiredLanguages, { name: newLang.trim(), level: newLangLevel }] }));
+    setNewLang("");
+  };
+  const removeLanguage = (i) => setForm((p) => ({ ...p, requiredLanguages: p.requiredLanguages.filter((_, idx) => idx !== i) }));
+
+  const addCertification = () => {
+    if (!newCert.trim()) return;
+    setForm((p) => ({ ...p, desiredCertifications: [...p.desiredCertifications, newCert.trim()] }));
+    setNewCert("");
+  };
+  const removeCertification = (i) => setForm((p) => ({ ...p, desiredCertifications: p.desiredCertifications.filter((_, idx) => idx !== i) }));
 
   const handleSubmit = async () => {
     if (!form.jobTitle || !form.department) {
@@ -137,7 +157,10 @@ const Reclutar = () => {
       description: v.description || "",
       requiredTechnicalSkills: v.requiredTechnicalSkills || [],
       desiredSoftSkills: v.desiredSoftSkills || [],
+      requiredLanguages: v.requiredLanguages || [],
+      desiredCertifications: v.desiredCertifications || [],
       experienceLevel: v.experienceLevel || "con experiencia",
+      minExperienceYears: v.minExperienceYears ?? 0,
       salaryRange: v.salaryRange || { min: 0, max: 0 },
       workAvailability: v.workAvailability || "tiempo completo",
       closingDate: v.closingDate || "",
@@ -250,13 +273,50 @@ const Reclutar = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Idiomas requeridos</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {form.requiredLanguages.map((l, i) => (
+                    <span key={i} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                      {l.name} ({l.level}) <button onClick={() => removeLanguage(i)} className="text-red-400">&times;</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input value={newLang} onChange={(e) => setNewLang(e.target.value)} placeholder="Ej: Inglés" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <select value={newLangLevel} onChange={(e) => setNewLangLevel(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {LANGUAGE_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                  <button onClick={addLanguage} className="bg-purple-50 text-purple-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-purple-100">+</button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Certificaciones deseadas <span className="text-xs text-gray-400">(informativas)</span></label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {form.desiredCertifications.map((c, i) => (
+                    <span key={i} className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                      {c} <button onClick={() => removeCertification(i)} className="text-red-400">&times;</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input value={newCert} onChange={(e) => setNewCert(e.target.value)} placeholder="Ej: Scrum Fundamentals" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <button onClick={addCertification} className="bg-orange-50 text-orange-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-orange-100">+</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Nivel de experiencia</label>
                   <select value={form.experienceLevel} onChange={(e) => handleChange("experienceLevel", e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="con experiencia">Con experiencia</option>
                     <option value="sin experiencia">Sin experiencia</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Años mínimos</label>
+                  <input type="number" min="0" value={form.minExperienceYears} onChange={(e) => handleChange("minExperienceYears", Math.max(0, +e.target.value))} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Disponibilidad</label>

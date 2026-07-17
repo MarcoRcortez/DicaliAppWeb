@@ -12,6 +12,7 @@ import {
   getCompanyProfile,
   runMatchingForRecruiter,
   getRecruiterScores,
+  getMatchExplanation,
 } from "../api/api";
 
 const Postulantes = () => {
@@ -26,8 +27,20 @@ const Postulantes = () => {
   const [viewCandidate, setViewCandidate] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [companyName, setCompanyName] = useState("");
+  const [explanations, setExplanations] = useState({});
+  const [explLoading, setExplLoading] = useState(null);
 
   useEffect(() => { loadData(); }, [userId]);
+
+  const loadExplanation = async (matchId) => {
+    if (!matchId || explanations[matchId]) return;
+    setExplLoading(matchId);
+    try {
+      const res = await getMatchExplanation(matchId);
+      setExplanations((p) => ({ ...p, [matchId]: res.data.explanation }));
+    } catch { /* ignorar */ }
+    setExplLoading(null);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -198,6 +211,16 @@ const Postulantes = () => {
                 </div>
               )}
 
+              {/* Certificaciones */}
+              {viewCandidate.certifications?.length > 0 && (
+                <div className="mb-5">
+                  <h3 className="text-sm font-black text-blue-900 mb-2 uppercase tracking-wide">Certificaciones</h3>
+                  {viewCandidate.certifications.map((c, i) => (
+                    <p key={i} className="text-sm text-gray-700"><strong>{c.name}</strong> — {c.institution}{c.year ? ` (${c.year})` : ""}</p>
+                  ))}
+                </div>
+              )}
+
               {/* Salario y Disponibilidad */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-gray-50 rounded-xl p-3">
@@ -314,6 +337,16 @@ const Postulantes = () => {
                       <div className={`h-2 rounded-full transition-all ${score >= 80 ? "bg-green-500" : score >= 50 ? "bg-yellow-500" : "bg-red-400"}`} style={{ width: `${score}%` }}></div>
                     </div>
                     {matchData.jobTitle && <p className="text-[10px] text-gray-400 mt-1">Mejor match: {matchData.jobTitle}</p>}
+                    {matchData.id && (
+                      <div className="mt-1">
+                        {!explanations[matchData.id] && (
+                          <button onClick={() => loadExplanation(matchData.id)} className="text-[10px] text-blue-500 hover:underline font-bold">
+                            {explLoading === matchData.id ? "Generando..." : "¿Por qué este match?"}
+                          </button>
+                        )}
+                        {explanations[matchData.id] && <p className="text-[11px] text-gray-500 mt-1 italic">{explanations[matchData.id]}</p>}
+                      </div>
+                    )}
                   </div>
                 )}
 

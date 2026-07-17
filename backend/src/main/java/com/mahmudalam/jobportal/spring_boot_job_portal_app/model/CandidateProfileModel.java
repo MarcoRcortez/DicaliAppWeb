@@ -33,6 +33,7 @@ public class CandidateProfileModel {
     private List<SkillTag> technicalSkills;
     private List<String> softSkills;
     private List<LanguageEntry> languages;
+    private List<CertificationEntry> certifications;
 
     private SalaryRange expectedSalary;
 
@@ -82,6 +83,14 @@ public class CandidateProfileModel {
         private String name;
         /** A1 | A2 | B1 | B2 | C1 | C2 | Nativo */
         private String level;
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class CertificationEntry {
+        private String name;
+        private String institution;
+        private String year;
     }
 
     @Data

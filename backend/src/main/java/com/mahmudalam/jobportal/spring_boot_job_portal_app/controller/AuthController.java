@@ -1,7 +1,6 @@
 package com.mahmudalam.jobportal.spring_boot_job_portal_app.controller;
 
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.dto.AuthRequest;
-import com.mahmudalam.jobportal.spring_boot_job_portal_app.dto.AuthResponse;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.dto.RegisterRequest;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.service.AuthService;
 import lombok.RequiredArgsConstructor;

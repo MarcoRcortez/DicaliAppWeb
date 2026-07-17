@@ -34,6 +34,12 @@ public class MatchModel {
     private LocalDateTime calculatedAt;
     private LocalDateTime actionAt;
 
+    /** Explicación del match en lenguaje natural (generada por LLM, on-demand). Nullable. */
+    private String explanation;
+
+    /** Momento en que se generó la explicación. Se considera vigente si >= calculatedAt. */
+    private LocalDateTime explanationGeneratedAt;
+
     // Snapshot de la vacante para mostrar al candidato en SECTOR MATCHES
     private String jobTitle;
     private String department;

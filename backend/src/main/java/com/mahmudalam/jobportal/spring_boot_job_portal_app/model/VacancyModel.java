@@ -34,8 +34,17 @@ public class VacancyModel {
     private List<SkillTag> requiredTechnicalSkills;
     private List<String> desiredSoftSkills;
 
-    /** "con experiencia" | "sin experiencia" */
+    /** Idiomas requeridos (mismo formato que CandidateProfileModel.LanguageEntry) */
+    private List<LanguageEntry> requiredLanguages;
+
+    /** Certificaciones deseadas (informativas, no puntúan en el matching) */
+    private List<String> desiredCertifications;
+
+    /** "con experiencia" | "sin experiencia" (etiqueta gruesa, se mantiene para UI) */
     private String experienceLevel;
+
+    /** Años mínimos de experiencia requeridos. Nullable: null = sin requisito numérico. */
+    private Integer minExperienceYears;
 
     private SalaryRange salaryRange;
 
@@ -53,6 +62,14 @@ public class VacancyModel {
     @NoArgsConstructor
     public static class SkillTag {
         private String name;
+        private String level;
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class LanguageEntry {
+        private String name;
+        /** A1 | A2 | B1 | B2 | C1 | C2 | Nativo */
         private String level;
     }
 

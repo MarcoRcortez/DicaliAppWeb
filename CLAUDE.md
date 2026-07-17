@@ -4,15 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-A job portal ("DICALI") with a Spring Boot + MongoDB backend and a React (Vite) frontend. Originally a
-simple job board (see [README.md](README.md) for the original design — its "API Endpoints" section is
-now historical, not authoritative), it has been reworked into a talent/company platform: candidate and
-company registration, NIT-based company verification/audit, candidate↔job matching, and PDF résumé
-generation.
+A job portal ("DICALI") with a Spring Boot + MongoDB backend and a React (Vite) frontend. It is a
+talent/company platform: role-based accounts (candidate / recruiter / admin) with real JWT auth,
+structured candidate CVs and company vacancies, a **weighted candidate↔vacancy matching engine**, and
+an optional **local-LLM (Ollama) natural-language explanation** of each match score. Candidates can also
+export their CV to PDF client-side.
 
-There used to be a second, competing backend (`backend/server.js`, a standalone Express + Mongoose
-script also bound to port 8080) left over from an earlier iteration. It has been removed — **Spring Boot
-is the single backend**. If you see references to it in old notes/history, they're stale.
+**Important — two systems live in this repo, only one is real.** There is an older, *dead* codebase
+(simple `CandidateModel`/`CompanyModel`/`JobPostModel`, `MatchingService`, pages like `CreatePost.jsx`)
+that is **not routed in `App.jsx`** and has no live caller. Everything below marked "legacy/dead" exists
+only as leftovers. The [README.md](README.md) and its "API Endpoints" section describe that original
+design and are historical, not authoritative. When in doubt, trust the routed pages in `App.jsx` and the
+`/api/*-profiles`, `/api/vacancies`, `/api/matches`, `/api/auth`, `/api/admin` endpoints.
+
+There used to be a second, competing backend (`backend/server.js`, an Express + Mongoose script). It has
+been removed — **Spring Boot is the single backend**.
 
 ## Common commands
 
@@ -23,56 +29,113 @@ mvn test                    # run backend tests
 mvn package                 # build the jar
 ```
 Requires MongoDB running locally at `mongodb://localhost:27017/job_portal_db` (configured in
-`backend/src/main/resources/application.properties`).
+`backend/src/main/resources/application.properties`). Java 17, Spring Boot 3.2.3.
+
+**Optional — Ollama (local LLM)** for AI match explanations. Without it the app still works; explanations
+fall back to a deterministic Spanish summary. To enable real LLM output:
+```bash
+ollama pull gemma3:1b
+ollama serve                # listens on http://localhost:11434
+```
+Configured via `ollama.*` in `application.properties` (`ollama.enabled=false` disables it entirely).
 
 ### Frontend (from `frontend/`)
 ```bash
 npm install
 npm run dev                 # Vite dev server on http://localhost:5173
-npm run build                # production build
-npm run lint                 # ESLint
+npm run build               # production build
+npm run lint                # ESLint
 ```
 
 There is no frontend test runner configured.
 
 ## Architecture
 
-### Backend (`backend/src/main/java/.../spring_boot_job_portal_app/`)
-- `controller/` — `@RestController` classes, one per resource:
-  - `CandidateController` (`/api/candidates/...`) — register, list, lookup by email, and
-    `/match/{jobId}` (candidate↔job compatibility, see `MatchingService`).
-  - `CompanyController` (`/api/companies/...`) — register, list, `/pending` (audit queue),
-    `/verify/{id}`, `/verify-nit` (plain-text NIT lookup used by `CreatePost.jsx` before letting a
-    company publish), plus an admin `/save` upsert and `/delete/{id}`.
-  - `JobPostController` (`/api/jobPosts/...`) — `/all`, `/register` (simple posting from `PostJob.jsx`),
-    `/add` (NIT-audited posting from `CreatePost.jsx`), `/save` (admin upsert), `DELETE /{id}`.
-- `model/` — MongoDB documents: `CandidateModel` (`Candidates` collection, fields `fullName`/`email`/
-  `education`/`experienceYears`/`skills`/`whatsapp`), `CompanyModel` (`companies`, with `status`/
-  `verified` for the audit workflow), `JobPostModel` (`JobPosts`) and `CandidateMatchDTO`
-  (candidate + match score).
-  - `JobPostModel` deliberately carries **two parallel sets of fields** because the frontend has two
-    different job-posting flows that were never unified: `title`/`companyName`/`city`/`salary`/
-    `description` (simple flow: `PostJob.jsx`, displayed by `Feed.jsx`/`JobBoard.jsx`/`AdminJobs.jsx`)
-    and `profile`/`desc`/`exp`/`techs`/`whatsappLink`/`nit` (audited flow: `CreatePost.jsx`, consumed by
-    `MatchingService`). `category` is shared by both. When touching job posts, check which flow the page
-    you're editing belongs to rather than assuming one field set.
-- `repository/` — Spring Data `MongoRepository` interfaces: `CandidateRepository`, `CompanyRepository`
-  (`findByNit`), `JobRepository`. This is the only repository layer — don't recreate a parallel one.
-- `service/` — `MatchingService` (candidate↔job score: 50% on meeting min experience, 50% on skill/tech
-  overlap, wired into `CandidateController#match`) and `PdfGeneratorService` (builds a one-page CV PDF
-  via iText 7; not currently called from a controller — `CandidateProfile.jsx` instead generates the PDF
-  client-side with `jsPDF`/`html2canvas`).
+Backend Java package root: `com.mahmudalam.jobportal.spring_boot_job_portal_app`.
+
+### Backend — the LIVE system
+
+- **Auth (`security/` + `service/AuthService` + `controller/AuthController`)** — real JWT auth.
+  `AuthController` (`/api/auth/...`) does `register`/`login` (bcrypt passwords, roles
+  `CANDIDATE`/`RECRUITER`/`ADMIN`), returns a JWT (`{token, role, userId, email}`), plus a
+  security-question password-reset flow. `JwtAuthFilter` validates the bearer token on every request;
+  `SecurityConfig` sets what's public vs. authenticated:
+  - Public: `/api/auth/**`, `GET /api/vacancies/public/**`, swagger, and the dead legacy endpoints
+    (`/api/candidates|companies|jobPosts/**`) kept only for backward compat.
+  - Authenticated: `/api/candidate-profiles/**`, `/api/company-profiles/**`, `/api/vacancies/**`
+    (non-public), `/api/matches/**`.
+  - `ROLE_ADMIN` only: `/api/admin/**`.
+- **`model/` (live documents)**:
+  - `CandidateProfileModel` (`candidate_profiles`) — structured CV: `workExperience`
+    (title/company/start/end/current), `educations`, `technicalSkills` (`SkillTag`: name + level
+    `BASICO|INTERMEDIO|AVANZADO|EXPERTO`), `softSkills`, `languages` (`LanguageEntry`: name + level
+    `A1..C2|Nativo`), `certifications` (`CertificationEntry`: name/institution/year), `expectedSalary`,
+    `workType`, `availability`, `profileComplete`, etc.
+  - `VacancyModel` (`vacancies`) — `jobTitle`, `department`, `description` (UI-capped at 20 words),
+    `requiredTechnicalSkills` (`SkillTag`), `desiredSoftSkills`, `requiredLanguages` (`LanguageEntry`),
+    `desiredCertifications`, `experienceLevel` (coarse label) **and** `minExperienceYears` (numeric,
+    nullable — used for scoring), `salaryRange`, `workAvailability`, `status` (`Abierta`/`Cerrada`),
+    `recruiterId`.
+  - `MatchModel` (`matches`) — persisted match: `candidateId`, `vacancyId`, `recruiterId`, `score`,
+    `status` (`PENDING`/`MATCHED`/`REJECTED`), `candidateNotified`, a snapshot of vacancy fields, and
+    `explanation`/`explanationGeneratedAt` (LLM explanation cache).
+  - `MatchBreakdown` — a `record` (NOT a Mongo document), built on demand to feed the explanation prompt
+    with per-criterion sub-scores and matched/missing skill/language lists.
+  - `UserModel` (`users`), `CompanyProfileModel` (`company_profiles`).
+- **`controller/` (live)**: `CandidateProfileController` (`/api/candidate-profiles`),
+  `CompanyProfileController` (`/api/company-profiles`), `VacancyController` (`/api/vacancies` — creating
+  a vacancy or saving a candidate profile triggers matching automatically), `MatchController`
+  (`/api/matches` — recommendations, confirmed matches, accept/reject, recruiter score aggregation, and
+  `GET /{matchId}/explanation`), `AdminController` (`/api/admin` — stats + CRUD over users/vacancies/
+  profiles/companies). Controllers persist the **full `@RequestBody` model** via `.save()`, so adding a
+  new model field needs **no controller change**.
+- **`service/` (live)**:
+  - `MatchingEngine` — the real matching engine. Weighted score over 6 criteria, weights **configurable**
+    via `matching.weights.*` in `application.properties` (defaults: technical 0.55, soft 0.20,
+    experience 0.10, salary 0.05, workType 0.05, language 0.05; a startup `@PostConstruct` logs a WARN if
+    they don't sum to ~1.0). Technical/soft/language use name + level comparison; experience uses actual
+    years computed from `workExperience` dates with partial credit against `minExperienceYears`.
+    `calculateBreakdown(candidate, vacancy)` returns a `MatchBreakdown`; `calculateScore` delegates to it.
+  - `OllamaService` — client for a local Ollama instance (`config/OllamaProperties`+`OllamaConfig` define
+    the `RestTemplate` bean and `ollama.*` config). **Never throws**: any failure (Ollama down, timeout,
+    bad JSON) returns `Optional.empty()` so matching keeps working without the LLM.
+  - `MatchExplanationService` — builds the explanation for a match **on demand** (not during bulk
+    matching, to avoid adding LLM latency to the O(n·m) recalculation loop), caches it on the `MatchModel`
+    (regenerated if the match was recalculated after the last explanation), and returns a deterministic
+    fallback string when Ollama is unavailable.
+- **`repository/`** — Spring Data `MongoRepository` interfaces (`UserRepository`,
+  `CandidateProfileRepository`, `CompanyProfileRepository`, `VacancyRepository`, `MatchRepository`). This
+  is the only repository layer.
+
+### Backend — DEAD / legacy (do not build on, do not delete unprompted)
+
+These exist but are **not reachable** and are not part of the live system: controllers
+`CandidateController`/`CompanyController`/`JobPostController`, service `MatchingService` (simple 2-criteria
+average — NOT the real engine), models `CandidateModel`/`CompanyModel`/`JobPostModel`/`CandidateMatchDTO`,
+and `PdfGeneratorService` (iText 7 CV builder, never called — the PDF is generated client-side instead).
+Their endpoints (`/api/candidates|companies|jobPosts`) stay public for backward compat but have no live
+frontend caller. If old notes reference these as current, they're stale.
 
 ### Frontend (`frontend/src/`)
-- `api/api.js` — small `axios` helper module mirroring the real backend endpoints above. Most pages
-  currently call `axios` directly with hardcoded `http://localhost:8080/...` URLs instead of going
-  through it; prefer routing new code through `api.js` where practical.
-- `App.jsx` — route table. Some pages are intentional UI alternates of each other and only one of each
-  pair is routed: `Feed.jsx` duplicates `JobBoard.jsx` (job listing), `UserProfile.jsx` duplicates
-  `CandidateProfile.jsx` (candidate profile lookup + PDF download). `JobBoard`/`CandidateProfile` are the
-  ones wired into `App.jsx`; the other two are kept as alternates, not bugs.
-- `components/ProtectedRoute.jsx` gates the `/admin*` routes on `localStorage.getItem("adminToken") ===
-  "true"`. There is no real authentication yet — nothing in `Login.jsx` actually sets that flag, so the
-  admin routes are effectively only reachable by setting it manually (e.g. via devtools) until real login
-  is implemented.
+
+- **Auth is real**: `components/ProtectedRoute.jsx` gates routes on `useAuthStore()` (`token` + `role`),
+  redirecting to `/` if missing or role-mismatched. (There is no `localStorage.adminToken` flag anymore.)
+- **Routes (`App.jsx`)** — only live-flow pages are routed:
+  - `/` `Home`, `/login/:roleParam` `Login`.
+  - Candidate (role `CANDIDATE`): `/candidate` `CandidateDashboard`, `/candidate/empleos` `Empleos.jsx`
+    (browse vacancies + see compatibility % + "¿Por qué este match?" explanation), `/candidate/curriculum`
+    `MiCurriculum.jsx` (structured CV editor + PDF export).
+  - Company (role `RECRUITER`): `/company` `CompanyDashboard`, `/company/postulantes` `Postulantes.jsx`
+    (ranked candidates + explanation), `/company/mi-empresa` `MiEmpresa`, `/company/reclutar`
+    `Reclutar.jsx` (create/edit vacancy: skills, languages, certifications, min-years).
+  - `/admin` `AdminPanel` (role `ADMIN`), `*` `NotFound`.
+  - Pages NOT imported here (`CreatePost.jsx`, `RegisterCandidate.jsx`, `Feed.jsx`, `JobBoard.jsx`,
+    `CandidateProfile.jsx`, `UserProfile.jsx`, `AdminJobs.jsx`, `AdminDashboard.jsx`, `AuditCompanies.jsx`,
+    `PostJob.jsx`, `CompanyPanel.jsx`) are orphaned/dead.
+- `api/api.js` — single source of truth for API calls (axios instance that injects the JWT). Live
+  functions cover `/auth`, `/candidate-profiles`, `/company-profiles`, `/vacancies`, `/matches`,
+  `/admin`; a clearly marked `// ─── LEGACY ───` section holds the dead `/jobPosts|/companies|/candidates`
+  helpers used only by the orphaned pages.
+- Candidates fill their CV via **structured forms** in `MiCurriculum.jsx` (deliberate: no free-text CV
+  parsing). The CV PDF is generated client-side with `jsPDF`.
 - Styling is Tailwind v4 via `@tailwindcss/vite` (see `vite.config.js`), not the v3 PostCSS pipeline.

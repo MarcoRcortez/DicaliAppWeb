@@ -3,6 +3,7 @@ package com.mahmudalam.jobportal.spring_boot_job_portal_app.controller;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.model.*;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.repository.*;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.service.MatchingEngine;
+import com.mahmudalam.jobportal.spring_boot_job_portal_app.service.MatchExplanationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ public class MatchController {
     private final CandidateProfileRepository candidateProfileRepository;
     private final VacancyRepository vacancyRepository;
     private final MatchingEngine matchingEngine;
+    private final MatchExplanationService matchExplanationService;
 
     /** Vacantes recomendadas para un candidato (ordenadas por score) */
     @GetMapping("/candidate/{candidateId}")
@@ -202,5 +204,16 @@ public class MatchController {
             }
         }
         return ResponseEntity.ok(bestByCandidate);
+    }
+
+    /** Explicación del match en lenguaje natural (generada por LLM, on-demand y cacheada) */
+    @GetMapping("/{matchId}/explanation")
+    public ResponseEntity<?> getExplanation(@PathVariable String matchId) {
+        try {
+            String text = matchExplanationService.getOrGenerateExplanation(matchId);
+            return ResponseEntity.ok(Map.of("explanation", text));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

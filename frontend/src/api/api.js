@@ -48,6 +48,7 @@ export const runMatchingForCandidate = (candidateId) => API.post(`/matches/run-f
 export const directMatch = (data) => API.post("/matches/direct", data);
 export const runMatchingForRecruiter = (recruiterId) => API.post(`/matches/run-for-recruiter/${recruiterId}`);
 export const getRecruiterScores = (recruiterId) => API.get(`/matches/recruiter/${recruiterId}/scores`);
+export const getMatchExplanation = (matchId) => API.get(`/matches/${matchId}/explanation`);
 
 // ─── ADMIN ───────────────────────────────────────────────────────────────────
 export const getAdminStats = () => API.get("/admin/stats");
