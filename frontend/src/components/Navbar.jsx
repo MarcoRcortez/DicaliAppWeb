@@ -1,10 +1,27 @@
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import useAuthStore from "../store/authStore";
+import { getCandidateProfile, getConfirmedMatchesCandidate } from "../api/api";
 
 const Navbar = () => {
-  const { token, role, email, logout } = useAuthStore();
+  const { token, role, email, userId, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const [matchCount, setMatchCount] = useState(0);
+
+  // Contador de matches confirmados del candidato (se carga una vez)
+  useEffect(() => {
+    if (!token || role !== "CANDIDATE" || !userId) { setMatchCount(0); return; }
+    let cancelado = false;
+    (async () => {
+      try {
+        const perfil = await getCandidateProfile(userId);
+        const res = await getConfirmedMatchesCandidate(perfil.data.id);
+        if (!cancelado) setMatchCount(res.data.length);
+      } catch { /* sin perfil o sin matches todavía */ }
+    })();
+    return () => { cancelado = true; };
+  }, [token, role, userId, location.pathname]);
 
   // No mostrar en el AdminPanel (tiene su propio sidebar)
   if (location.pathname === "/admin") return null;
@@ -49,8 +66,13 @@ const Navbar = () => {
                 <Link to="/candidate" className={`text-sm font-semibold transition-colors ${isActive("/candidate") ? "text-blue-600" : "text-gray-500 hover:text-blue-900"}`}>
                   Inicio
                 </Link>
-                <Link to="/candidate/empleos" className={`text-sm font-semibold transition-colors ${isActive("/candidate/empleos") ? "text-blue-600" : "text-gray-500 hover:text-blue-900"}`}>
+                <Link to="/candidate/empleos" className={`text-sm font-semibold transition-colors flex items-center gap-1.5 ${isActive("/candidate/empleos") ? "text-blue-600" : "text-gray-500 hover:text-blue-900"}`}>
                   Empleos
+                  {matchCount > 0 && (
+                    <span title={`Tienes ${matchCount} match(es) con empresas`} className="bg-green-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                      {matchCount}
+                    </span>
+                  )}
                 </Link>
                 <Link to="/candidate/curriculum" className={`text-sm font-semibold transition-colors ${isActive("/candidate/curriculum") ? "text-blue-600" : "text-gray-500 hover:text-blue-900"}`}>
                   Mi CV

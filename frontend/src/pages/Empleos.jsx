@@ -29,6 +29,16 @@ const Empleos = () => {
   const [explanations, setExplanations] = useState({});
   const [explLoading, setExplLoading] = useState(null);
 
+  // Búsqueda y filtros avanzados
+  const [search, setSearch] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [minScore, setMinScore] = useState(0);
+  const [minSalary, setMinSalary] = useState("");
+  const [availabilityFilter, setAvailabilityFilter] = useState("Todas");
+  const [maxYearsRequired, setMaxYearsRequired] = useState("");
+  const [langFilter, setLangFilter] = useState("Todos");
+  const [sortBy, setSortBy] = useState("score");
+
   useEffect(() => { loadData(); }, [userId]);
 
   const loadExplanation = async (matchId) => {
@@ -91,7 +101,48 @@ const Empleos = () => {
   };
 
   const departments = ["Todos", ...new Set(vacancies.map((v) => v.department).filter(Boolean))];
-  const filtered = filter === "Todos" ? vacancies : vacancies.filter((v) => v.department === filter);
+  const langs = ["Todos", ...new Set(vacancies.flatMap((v) => (v.requiredLanguages || []).map((l) => l.name)).filter(Boolean))];
+
+  /** Compatibilidad del candidato con una vacante (-1 si aún no está calculada) */
+  const scoreOf = (v) => candidateScores[v.id]?.score ?? -1;
+
+  const filtered = vacancies
+    .filter((v) => {
+      const q = search.toLowerCase().trim();
+      if (q) {
+        const texto = [
+          v.jobTitle, v.companyName, v.department, v.description,
+          ...(v.requiredTechnicalSkills || []).map((s) => s.name),
+          ...(v.desiredSoftSkills || []),
+          ...(v.requiredLanguages || []).map((l) => l.name),
+          ...(v.desiredCertifications || []),
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!texto.includes(q)) return false;
+      }
+      if (filter !== "Todos" && v.department !== filter) return false;
+      if (availabilityFilter !== "Todas" && v.workAvailability !== availabilityFilter) return false;
+      if (langFilter !== "Todos" && !v.requiredLanguages?.some((l) => l.name === langFilter)) return false;
+      if (minSalary && (v.salaryRange?.max || 0) < Number(minSalary)) return false;
+      if (maxYearsRequired !== "" && (v.minExperienceYears ?? 0) > Number(maxYearsRequired)) return false;
+      if (minScore > 0 && scoreOf(v) < minScore) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "salary") return (b.salaryRange?.max || 0) - (a.salaryRange?.max || 0);
+      if (sortBy === "recent") return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+      return scoreOf(b) - scoreOf(a); // por compatibilidad (por defecto)
+    });
+
+  /** Top 3 vacantes recomendadas por el motor (independiente de los filtros activos) */
+  const recomendadas = [...vacancies]
+    .filter((v) => scoreOf(v) >= 60)
+    .sort((a, b) => scoreOf(b) - scoreOf(a))
+    .slice(0, 3);
+
+  const limpiarFiltros = () => {
+    setSearch(""); setFilter("Todos"); setMinScore(0); setMinSalary("");
+    setAvailabilityFilter("Todas"); setMaxYearsRequired(""); setLangFilter("Todos"); setSortBy("score");
+  };
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>;
@@ -329,13 +380,105 @@ const Empleos = () => {
           </motion.div>
         )}
 
-        {/* FILTROS */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {departments.map((d) => (
-            <button key={d} onClick={() => setFilter(d)} className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${filter === d ? "bg-blue-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:border-blue-400"}`}>
-              {d}
+        {/* ── RECOMENDADAS PARA TI (ranking del motor de matching) ── */}
+        {recomendadas.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 border-2 border-blue-300 rounded-2xl p-6 bg-blue-50">
+            <h2 className="text-lg font-black text-blue-900 mb-1">⭐ Recomendadas para ti</h2>
+            <p className="text-xs text-blue-700 mb-4">Las vacantes con mayor compatibilidad según tu currículum.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {recomendadas.map((v) => {
+                const s = Math.round(scoreOf(v));
+                return (
+                  <div key={v.id} className="bg-white rounded-xl p-4 shadow-sm border border-blue-200 flex flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-bold text-blue-900 text-sm leading-tight">{v.jobTitle}</h3>
+                      <span className="text-xs font-black px-2 py-0.5 rounded-full bg-green-100 text-green-700 flex-shrink-0">{s}%</span>
+                    </div>
+                    <p className="text-xs text-blue-600 font-semibold mt-1">{v.companyName}</p>
+                    <p className="text-[11px] text-gray-500">{v.department}</p>
+                    <div className="w-full bg-blue-100 rounded-full h-1.5 mt-2">
+                      <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${s}%` }}></div>
+                    </div>
+                    <button onClick={() => setViewVacancy(v)} className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition-all">
+                      VER DETALLES
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── BÚSQUEDA Y FILTROS AVANZADOS ── */}
+        <div className="bg-white rounded-2xl shadow p-4 mb-6 border border-gray-100">
+          <div className="flex flex-col md:flex-row gap-3">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por puesto, empresa, habilidad o descripción..."
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="score">Ordenar: compatibilidad</option>
+              <option value="salary">Ordenar: mejor salario</option>
+              <option value="recent">Ordenar: más recientes</option>
+            </select>
+            <button
+              onClick={() => setShowFilters((s) => !s)}
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${showFilters ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+            >
+              Filtros avanzados
             </button>
-          ))}
+          </div>
+
+          {showFilters && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Área</label>
+                <select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm">
+                  {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Compatibilidad mínima</label>
+                <select value={minScore} onChange={(e) => setMinScore(Number(e.target.value))} className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm">
+                  <option value={0}>Cualquiera</option>
+                  <option value={50}>≥ 50%</option>
+                  <option value={70}>≥ 70%</option>
+                  <option value={90}>≥ 90%</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Salario mínimo (Bs.)</label>
+                <input type="number" min="0" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} placeholder="Cualquiera" className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Disponibilidad</label>
+                <select value={availabilityFilter} onChange={(e) => setAvailabilityFilter(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm">
+                  <option value="Todas">Todas</option>
+                  <option value="tiempo completo">Tiempo completo</option>
+                  <option value="medio tiempo">Medio tiempo</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Idioma requerido</label>
+                <select value={langFilter} onChange={(e) => setLangFilter(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm">
+                  {langs.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Exp. requerida máx. (años)</label>
+                <input type="number" min="0" value={maxYearsRequired} onChange={(e) => setMaxYearsRequired(e.target.value)} placeholder="Sin límite" className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm" />
+              </div>
+              <div className="flex items-end lg:col-span-2">
+                <button onClick={limpiarFiltros} className="w-full bg-gray-100 text-gray-700 rounded-lg px-2 py-2 text-sm font-bold hover:bg-gray-200">Limpiar filtros</button>
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-400 mt-3">
+            {filtered.length} {filtered.length === 1 ? "vacante encontrada" : "vacantes encontradas"}
+          </p>
         </div>
 
         {/* VACANTES */}

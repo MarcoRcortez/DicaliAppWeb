@@ -110,51 +110,84 @@ public class MatchController {
         return ResponseEntity.ok(Map.of("message", "Tarjeta eliminada."));
     }
 
-    /** Empresa hace match directo con un candidato (sin match precalculado) */
+    /**
+     * Empresa confirma match con un candidato para una vacante concreta.
+     *
+     * El reclutador elige explícitamente la vacante (`vacancyId`). Si no la envía, se usa
+     * aquella con la que el candidato tiene mejor score — nunca una vacante arbitraria.
+     * Si el match no estaba precalculado, el score se calcula con el motor (no se inventa).
+     */
     @PostMapping("/direct")
     public ResponseEntity<?> directMatch(@RequestBody Map<String, String> body) {
         String candidateId = body.get("candidateId");
         String recruiterId = body.get("recruiterId");
         String companyName = body.get("companyName");
+        String vacancyId   = body.get("vacancyId");
 
-        // Buscar si ya existe un match entre este candidato y alguna vacante del reclutador
         List<VacancyModel> myVacancies = vacancyRepository.findByRecruiterId(recruiterId);
-        for (VacancyModel v : myVacancies) {
-            var existing = matchRepository.findByCandidateIdAndVacancyId(candidateId, v.getId());
-            if (existing.isPresent()) {
-                MatchModel m = existing.get();
-                m.setStatus("MATCHED");
-                m.setActionAt(LocalDateTime.now());
-                m.setCandidateNotified(false);
-                matchRepository.save(m);
-                return ResponseEntity.ok(Map.of("message", "Match confirmado.", "matchId", m.getId()));
+        if (myVacancies.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "No tienes vacantes creadas."));
+        }
+
+        // 1. Determinar la vacante objetivo
+        VacancyModel target;
+        if (vacancyId != null && !vacancyId.isBlank()) {
+            target = myVacancies.stream()
+                    .filter(v -> vacancyId.equals(v.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if (target == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "La vacante indicada no pertenece a este reclutador."));
+            }
+        } else {
+            // Sin selección explícita: la de mejor score (determinístico, no "la primera")
+            target = myVacancies.get(0);
+            double best = -1;
+            for (VacancyModel v : myVacancies) {
+                var m = matchRepository.findByCandidateIdAndVacancyId(candidateId, v.getId());
+                if (m.isPresent() && m.get().getScore() > best) {
+                    best = m.get().getScore();
+                    target = v;
+                }
             }
         }
 
-        // Si no hay match previo, crear uno nuevo directamente
-        MatchModel match = new MatchModel();
-        match.setCandidateId(candidateId);
+        // 2. Confirmar el match existente para esa vacante, o crearlo con score real
+        var existing = matchRepository.findByCandidateIdAndVacancyId(candidateId, target.getId());
+        MatchModel match = existing.orElseGet(MatchModel::new);
+
+        if (existing.isEmpty()) {
+            CandidateProfileModel candidate = candidateProfileRepository.findById(candidateId).orElse(null);
+            double score = (candidate != null) ? matchingEngine.calculateScore(candidate, target) : 0.0;
+            match.setCandidateId(candidateId);
+            match.setVacancyId(target.getId());
+            match.setScore(score);
+            match.setCalculatedAt(LocalDateTime.now());
+        }
+
+        // Snapshot de la vacante elegida (lo que verá el candidato)
         match.setRecruiterId(recruiterId);
-        match.setCompanyName(companyName != null ? companyName : "Empresa");
-        match.setScore(100);
+        match.setCompanyName(companyName != null ? companyName : target.getCompanyName());
+        match.setJobTitle(target.getJobTitle());
+        match.setDepartment(target.getDepartment());
+        match.setDescription(target.getDescription());
+        match.setExperienceLevel(target.getExperienceLevel());
+        match.setWorkAvailability(target.getWorkAvailability());
+        if (target.getSalaryRange() != null) {
+            match.setSalaryMin(target.getSalaryRange().getMin());
+            match.setSalaryMax(target.getSalaryRange().getMax());
+        }
         match.setStatus("MATCHED");
-        match.setCalculatedAt(LocalDateTime.now());
         match.setActionAt(LocalDateTime.now());
         match.setCandidateNotified(false);
 
-        if (!myVacancies.isEmpty()) {
-            VacancyModel v = myVacancies.get(0);
-            match.setVacancyId(v.getId());
-            match.setJobTitle(v.getJobTitle());
-            match.setDepartment(v.getDepartment());
-            match.setDescription(v.getDescription());
-        } else {
-            match.setJobTitle("Match directo");
-            match.setDepartment("-");
-        }
-
         matchRepository.save(match);
-        return ResponseEntity.ok(Map.of("message", "Match directo creado.", "matchId", match.getId()));
+        return ResponseEntity.ok(Map.of(
+                "message", "Match confirmado.",
+                "matchId", match.getId(),
+                "jobTitle", target.getJobTitle() != null ? target.getJobTitle() : ""
+        ));
     }
 
     /** Candidato guarda perfil y se ejecuta matching automático */
