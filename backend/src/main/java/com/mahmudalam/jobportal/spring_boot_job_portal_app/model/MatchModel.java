@@ -31,6 +31,14 @@ public class MatchModel {
     /** Si el candidato ya fue notificado del MATCHED */
     private boolean candidateNotified = false;
 
+    /**
+     * El candidato se postuló activamente a esta vacante.
+     * Es independiente de `status`: expresa interés, pero la empresa sigue siendo
+     * quien confirma el match.
+     */
+    private boolean candidateApplied = false;
+    private LocalDateTime appliedAt;
+
     private LocalDateTime calculatedAt;
     private LocalDateTime actionAt;
 

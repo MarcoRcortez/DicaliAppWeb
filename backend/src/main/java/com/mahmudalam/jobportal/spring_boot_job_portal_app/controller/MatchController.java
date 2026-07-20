@@ -65,6 +65,68 @@ public class MatchController {
         return ResponseEntity.ok(Map.of("marked", pending.size()));
     }
 
+    /**
+     * El candidato se postula (o retira su postulación) a una vacante concreta.
+     *
+     * Marca únicamente `candidateApplied`: NO cambia el `status`, porque la
+     * confirmación del match sigue siendo decisión de la empresa. Si el match aún
+     * no existía, se crea calculando el score real con el motor.
+     */
+    @PutMapping("/apply")
+    public ResponseEntity<?> applyToVacancy(@RequestBody Map<String, Object> body) {
+        String candidateId = (String) body.get("candidateId");
+        String vacancyId   = (String) body.get("vacancyId");
+        boolean applied = !Boolean.FALSE.equals(body.get("applied")); // por defecto true
+
+        if (candidateId == null || vacancyId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Faltan candidateId o vacancyId."));
+        }
+
+        VacancyModel vacancy = vacancyRepository.findById(vacancyId).orElse(null);
+        if (vacancy == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        MatchModel match = matchRepository
+                .findByCandidateIdAndVacancyId(candidateId, vacancyId)
+                .orElse(null);
+
+        if (match == null) {
+            // Aún no había match calculado para este par: crearlo con el score real
+            CandidateProfileModel candidate = candidateProfileRepository.findById(candidateId).orElse(null);
+            if (candidate == null) {
+                return ResponseEntity.notFound().build();
+            }
+            match = new MatchModel();
+            match.setCandidateId(candidateId);
+            match.setVacancyId(vacancyId);
+            match.setRecruiterId(vacancy.getRecruiterId());
+            match.setCompanyName(vacancy.getCompanyName());
+            match.setScore(matchingEngine.calculateScore(candidate, vacancy));
+            match.setStatus("PENDING");
+            match.setCalculatedAt(LocalDateTime.now());
+            match.setJobTitle(vacancy.getJobTitle());
+            match.setDepartment(vacancy.getDepartment());
+            match.setDescription(vacancy.getDescription());
+            match.setExperienceLevel(vacancy.getExperienceLevel());
+            match.setWorkAvailability(vacancy.getWorkAvailability());
+            if (vacancy.getSalaryRange() != null) {
+                match.setSalaryMin(vacancy.getSalaryRange().getMin());
+                match.setSalaryMax(vacancy.getSalaryRange().getMax());
+            }
+        }
+
+        match.setCandidateApplied(applied);
+        match.setAppliedAt(applied ? LocalDateTime.now() : null);
+        matchRepository.save(match);
+
+        return ResponseEntity.ok(Map.of(
+                "message", applied ? "Postulación registrada." : "Postulación retirada.",
+                "matchId", match.getId(),
+                "candidateApplied", applied
+        ));
+    }
+
     /** Empresa hace MATCH con un candidato */
     @PutMapping("/{matchId}/accept")
     public ResponseEntity<?> acceptMatch(@PathVariable String matchId) {

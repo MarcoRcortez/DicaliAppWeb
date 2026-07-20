@@ -11,6 +11,7 @@ import {
   getMatchesForCandidate,
   getCompanyProfile,
   getMatchExplanation,
+  applyToVacancy,
 } from "../api/api";
 
 const Empleos = () => {
@@ -28,6 +29,7 @@ const Empleos = () => {
   const [contactLoading, setContactLoading] = useState(false);
   const [explanations, setExplanations] = useState({});
   const [explLoading, setExplLoading] = useState(null);
+  const [applying, setApplying] = useState(null);
 
   // Búsqueda y filtros avanzados
   const [search, setSearch] = useState("");
@@ -93,6 +95,26 @@ const Empleos = () => {
       // El candidato aún no tiene perfil
     }
     setLoading(false);
+  };
+
+  /** El candidato se postula (o retira su postulación) a una vacante concreta */
+  const handleApply = async (vacancy, applied) => {
+    if (!candidateId) {
+      alert("Primero completa y guarda tu currículum para poder postular.");
+      return;
+    }
+    setApplying(vacancy.id);
+    try {
+      const res = await applyToVacancy({ candidateId, vacancyId: vacancy.id, applied });
+      // Actualizar el estado local sin recargar toda la página
+      setCandidateScores((prev) => {
+        const actual = prev[vacancy.id] || { id: res.data.matchId, vacancyId: vacancy.id };
+        return { ...prev, [vacancy.id]: { ...actual, id: actual.id || res.data.matchId, candidateApplied: applied } };
+      });
+    } catch {
+      alert("No se pudo registrar la postulación. Intenta nuevamente.");
+    }
+    setApplying(null);
   };
 
   const handleRejectMatch = async (matchId) => {
@@ -276,7 +298,26 @@ const Empleos = () => {
                 </div>
               )}
 
-              <button onClick={() => setViewVacancy(null)} className="w-full mt-6 bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-gray-900 transition-all">Cerrar</button>
+              <div className="flex gap-3 mt-6">
+                {candidateScores[viewVacancy.id]?.candidateApplied ? (
+                  <button
+                    onClick={() => handleApply(viewVacancy, false)}
+                    disabled={applying === viewVacancy.id}
+                    className="flex-1 bg-blue-50 text-blue-700 border border-blue-300 py-3 rounded-xl font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
+                  >
+                    {applying === viewVacancy.id ? "..." : "✓ Ya te postulaste (retirar)"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleApply(viewVacancy, true)}
+                    disabled={applying === viewVacancy.id}
+                    className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all disabled:opacity-50"
+                  >
+                    {applying === viewVacancy.id ? "..." : "POSTULAR A ESTE PUESTO"}
+                  </button>
+                )}
+                <button onClick={() => setViewVacancy(null)} className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-gray-900 transition-all">Cerrar</button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -526,6 +567,24 @@ const Empleos = () => {
                   <button onClick={() => setViewVacancy(v)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-200 transition-all">
                     VER DETALLES
                   </button>
+                  {matchData?.candidateApplied ? (
+                    <button
+                      onClick={() => handleApply(v, false)}
+                      disabled={applying === v.id}
+                      title="Retirar mi postulación"
+                      className="flex-1 bg-blue-50 text-blue-700 border border-blue-300 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
+                    >
+                      {applying === v.id ? "..." : "✓ POSTULADO"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleApply(v, true)}
+                      disabled={applying === v.id}
+                      className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 transition-all disabled:opacity-50"
+                    >
+                      {applying === v.id ? "..." : "POSTULAR"}
+                    </button>
+                  )}
                   {score !== null && score >= 70 && (
                     <button onClick={() => openContact(v)} disabled={contactLoading} className="flex-1 bg-green-500 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-green-600 transition-all">
                       CONTACTAR

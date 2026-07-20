@@ -46,6 +46,7 @@ const Postulantes = () => {
   const [maxSalary, setMaxSalary] = useState("");
   const [minScore, setMinScore] = useState(0);
   const [sortBy, setSortBy] = useState("score");
+  const [soloPostulados, setSoloPostulados] = useState(false);
 
   useEffect(() => { loadData(); }, [userId]);
 
@@ -105,6 +106,7 @@ const Postulantes = () => {
               jobTitle: v.jobTitle,
               score: m.score,
               status: m.status,
+              candidateApplied: m.candidateApplied,
             });
           }
         } catch { /* vacante sin matches */ }
@@ -173,6 +175,18 @@ const Postulantes = () => {
   // Buscar datos completos del candidato por su candidateId (para matches confirmados)
   const findCandidateById = (candidateId) => candidates.find((c) => c.id === candidateId);
 
+  /**
+   * ¿El candidato se postuló? Si se está viendo una vacante concreta, a ESA vacante;
+   * si no, a cualquiera de las vacantes de la empresa.
+   */
+  const sePostulo = (candidateId) => {
+    const list = matchesByCandidate[candidateId] || [];
+    if (vacancyView !== "Todas") {
+      return list.some((m) => m.vacancyId === vacancyView && m.candidateApplied);
+    }
+    return list.some((m) => m.candidateApplied);
+  };
+
   /** Años de experiencia sumando las fechas del CV (mismo criterio que el motor) */
   const calcYears = (c) => {
     if (!c.workExperience?.length) return 0;
@@ -214,6 +228,7 @@ const Postulantes = () => {
         const m = getScoreForCandidate(c.id);
         if (!m || m.score < minScore) return false;
       }
+      if (soloPostulados && !sePostulo(c.id)) return false;
       if (vacancyView !== "Todas") {
         const list = matchesByCandidate[c.id] || [];
         if (!list.some((m) => m.vacancyId === vacancyView)) return false;
@@ -229,6 +244,7 @@ const Postulantes = () => {
   const limpiarFiltros = () => {
     setSearch(""); setFilter("Todos"); setLangFilter("Todos"); setWorkTypeFilter("Todos");
     setMinYears(0); setMaxSalary(""); setMinScore(0); setSortBy("score");
+    setSoloPostulados(false);
   };
 
   if (loading) {
@@ -375,12 +391,12 @@ const Postulantes = () => {
                   {[...vacancies]
                     .map((v) => {
                       const m = (matchesByCandidate[matchPopup.candidateId] || []).find((x) => x.vacancyId === v.id);
-                      return { ...v, _score: m ? Math.round(m.score) : null };
+                      return { ...v, _score: m ? Math.round(m.score) : null, _applied: !!m?.candidateApplied };
                     })
                     .sort((a, b) => (b._score ?? -1) - (a._score ?? -1))
                     .map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.jobTitle}{v._score !== null ? ` — ${v._score}% compatibilidad` : " — sin calcular"}
+                        {v.jobTitle}{v._score !== null ? ` — ${v._score}% compatibilidad` : " — sin calcular"}{v._applied ? " · se postuló" : ""}
                       </option>
                     ))}
                 </select>
@@ -524,6 +540,12 @@ const Postulantes = () => {
                 </select>
               </div>
               <div className="flex items-end">
+                <label className="flex items-center gap-2 w-full bg-blue-50 border border-blue-200 rounded-lg px-2 py-2 text-sm font-bold text-blue-700 cursor-pointer">
+                  <input type="checkbox" checked={soloPostulados} onChange={(e) => setSoloPostulados(e.target.checked)} className="accent-blue-600" />
+                  Solo postulados
+                </label>
+              </div>
+              <div className="flex items-end">
                 <button onClick={limpiarFiltros} className="w-full bg-gray-100 text-gray-700 rounded-lg px-2 py-2 text-sm font-bold hover:bg-gray-200">Limpiar filtros</button>
               </div>
             </div>
@@ -578,7 +600,14 @@ const Postulantes = () => {
                     {c.photoBase64 ? <img src={c.photoBase64} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-lg text-gray-300">👤</div>}
                   </div>
                   <div>
-                    <h3 className="font-bold text-blue-900">{c.fullName}</h3>
+                    <h3 className="font-bold text-blue-900 flex items-center gap-2">
+                      {c.fullName}
+                      {sePostulo(c.id) && (
+                        <span title="Este candidato se postuló activamente" className="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                          Se postuló
+                        </span>
+                      )}
+                    </h3>
                     <p className="text-xs text-gray-500">{c.location}</p>
                   </div>
                 </div>
