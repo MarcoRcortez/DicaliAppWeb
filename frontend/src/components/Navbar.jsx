@@ -69,7 +69,7 @@ const Navbar = () => {
                 <Link to="/candidate/empleos" className={`text-sm font-semibold transition-colors flex items-center gap-1.5 ${isActive("/candidate/empleos") ? "text-blue-600" : "text-gray-500 hover:text-blue-900"}`}>
                   Empleos
                   {matchCount > 0 && (
-                    <span title={`Tienes ${matchCount} match(es) con empresas`} className="bg-green-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                    <span title={`Tienes ${matchCount} conexión(es) con empresas`} className="bg-green-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
                       {matchCount}
                     </span>
                   )}

@@ -18,6 +18,7 @@ import CompanyDashboard from "./pages/CompanyDashboard";
 import Postulantes from "./pages/Postulantes";
 import MiEmpresa from "./pages/MiEmpresa";
 import Reclutar from "./pages/Reclutar";
+import Reportes from "./pages/Reportes";
 
 // Admin
 import AdminPanel from "./pages/AdminPanel";
@@ -49,6 +50,7 @@ function App() {
             <Route path="/company/postulantes" element={<ProtectedRoute allowedRoles={["RECRUITER"]}><Postulantes /></ProtectedRoute>} />
             <Route path="/company/mi-empresa" element={<ProtectedRoute allowedRoles={["RECRUITER"]}><MiEmpresa /></ProtectedRoute>} />
             <Route path="/company/reclutar" element={<ProtectedRoute allowedRoles={["RECRUITER"]}><Reclutar /></ProtectedRoute>} />
+            <Route path="/company/reportes" element={<ProtectedRoute allowedRoles={["RECRUITER"]}><Reportes /></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]}><AdminPanel /></ProtectedRoute>} />

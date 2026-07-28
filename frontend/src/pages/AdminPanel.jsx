@@ -248,8 +248,8 @@ const AdminPanel = () => {
                 {[
                   { label: "Total Usuarios", value: stats.totalUsers, border: "border-blue-500" },
                   { label: "Vacantes Abiertas", value: stats.openVacancies, border: "border-green-500" },
-                  { label: "Matches Totales", value: stats.totalMatches, border: "border-yellow-500" },
-                  { label: "Matches Confirmados", value: stats.confirmedMatches, border: "border-purple-500" },
+                  { label: "Compatibilidades Calculadas", value: stats.totalMatches, border: "border-yellow-500" },
+                  { label: "Conexiones Confirmadas", value: stats.confirmedMatches, border: "border-purple-500" },
                 ].map((c, i) => (
                   <div key={i} className={`bg-white rounded-2xl shadow p-6 border-l-4 ${c.border}`}>
                     <p className="text-xs text-gray-400 font-bold uppercase">{c.label}</p>
@@ -279,9 +279,9 @@ const AdminPanel = () => {
                   </ResponsiveContainer>
                 </div>
                 <div className="bg-white rounded-2xl shadow p-6 md:col-span-2">
-                  <h3 className="text-sm font-bold text-gray-700 mb-4">Resumen de Matches</h3>
+                  <h3 className="text-sm font-bold text-gray-700 mb-4">Resumen de Conexiones</h3>
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={[{ name: "Matches Totales", cantidad: Number(stats.totalMatches) }, { name: "Confirmados", cantidad: Number(stats.confirmedMatches) }]}>
+                    <BarChart data={[{ name: "Compatibilidades", cantidad: Number(stats.totalMatches) }, { name: "Confirmadas", cantidad: Number(stats.confirmedMatches) }]}>
                       <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip />
                       <Bar dataKey="cantidad" fill="#10b981" radius={[8, 8, 0, 0]} />
                     </BarChart>

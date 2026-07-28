@@ -22,7 +22,7 @@ const CandidateDashboard = () => {
             <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-2xl transition-all border-2 border-transparent hover:border-blue-500">
               <div className="text-4xl mb-4">💼</div>
               <h2 className="text-2xl font-black text-blue-900 mb-2">EMPLEOS</h2>
-              <p className="text-gray-500 text-sm">Explora las vacantes disponibles y revisa tus matches con empresas. Si una empresa está interesada en ti, lo verás aquí.</p>
+              <p className="text-gray-500 text-sm">Explora las vacantes disponibles y revisa tus conexiones con empresas. Si una empresa está interesada en ti, lo verás aquí.</p>
             </div>
           </Link>
 

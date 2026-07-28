@@ -17,12 +17,20 @@ const CompanyDashboard = () => {
           <p className="text-gray-400 mt-2">{email}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link to="/company/postulantes" className="group">
             <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all border-2 border-transparent hover:border-blue-500 h-full">
               <div className="text-3xl mb-3">👥</div>
               <h2 className="text-xl font-black text-blue-900 mb-2">POSTULANTES</h2>
-              <p className="text-gray-500 text-xs">Ve los candidatos disponibles y haz match con los que mejor se ajusten a tus vacantes.</p>
+              <p className="text-gray-500 text-xs">Ve los candidatos disponibles y conecta con los que mejor se ajusten a tus vacantes.</p>
+            </div>
+          </Link>
+
+          <Link to="/company/reportes" className="group">
+            <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all border-2 border-transparent hover:border-amber-500 h-full">
+              <div className="text-3xl mb-3">📊</div>
+              <h2 className="text-xl font-black text-amber-700 mb-2">REPORTES</h2>
+              <p className="text-gray-500 text-xs">Consulta cómo va tu proceso: postulaciones, conexiones, rechazos y postulaciones sin responder.</p>
             </div>
           </Link>
 

@@ -14,6 +14,7 @@ import {
   getRecruiterScores,
   getMatchExplanation,
 } from "../api/api";
+import { titleCase } from "../utils/format";
 
 const Postulantes = () => {
   const { userId } = useAuthStore();
@@ -147,9 +148,9 @@ const Postulantes = () => {
       const titulo = vacancies.find((v) => v.id === popupVacancy)?.jobTitle || "";
       setMatchPopup(null);
       await loadData();
-      alert(`¡Match confirmado${titulo ? ` para el puesto de ${titulo}` : ""}! El postulante recibirá una notificación.`);
+      alert(`¡Conexión confirmada${titulo ? ` para el puesto de ${titleCase(titulo)}` : ""}! El postulante recibirá una notificación.`);
     } catch (err) {
-      alert("Error al hacer match: " + (err.response?.data?.error || err.message));
+      alert("Error al conectar: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -265,7 +266,7 @@ const Postulantes = () => {
                   {viewCandidate.photoBase64 ? <img src={viewCandidate.photoBase64} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-3xl text-gray-300">👤</div>}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-blue-950">{viewCandidate.fullName || "Sin nombre"}</h2>
+                  <h2 className="text-2xl font-black text-blue-950">{titleCase(viewCandidate.fullName) || "Sin nombre"}</h2>
                   <p className="text-sm text-gray-500">{viewCandidate.email} | {viewCandidate.phone} | {viewCandidate.location}</p>
                 </div>
               </div>
@@ -375,14 +376,14 @@ const Postulantes = () => {
         {matchPopup && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setMatchPopup(null)}>
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 text-center" onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-2xl font-black text-blue-950 mb-4">¿Vas a hacer match?</h2>
-              <p className="text-gray-600 mb-4">Vas a hacer match con <strong>{matchPopup.name}</strong>.</p>
+              <h2 className="text-2xl font-black text-blue-950 mb-4">¿Vas a conectar con este candidato?</h2>
+              <p className="text-gray-600 mb-4">Vas a conectar con <strong>{titleCase(matchPopup.name)}</strong>.</p>
 
               {/* Selección explícita del puesto */}
               <div className="text-left mb-5">
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Puesto al que se asociará</label>
                 <select
-                  aria-label="Puesto para el match"
+                  aria-label="Puesto para la conexión"
                   value={popupVacancy}
                   onChange={(e) => setPopupVacancy(e.target.value)}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -407,7 +408,7 @@ const Postulantes = () => {
 
               <p className="text-xs text-gray-500 mb-5">El postulante recibirá una notificación con este puesto.</p>
               <div className="flex gap-4 justify-center">
-                <button onClick={handleAcceptMatch} disabled={!popupVacancy} className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 disabled:opacity-50">HACER MATCH</button>
+                <button onClick={handleAcceptMatch} disabled={!popupVacancy} className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 disabled:opacity-50">CONECTAR</button>
                 <button onClick={() => setMatchPopup(null)} className="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300">SALIR</button>
               </div>
             </motion.div>
@@ -421,8 +422,8 @@ const Postulantes = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setConfirmDelete(null)}>
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 text-center" onClick={(e) => e.stopPropagation()}>
               <div className="text-5xl mb-4">⚠️</div>
-              <h2 className="text-2xl font-black text-blue-950 mb-2">¿Eliminar este match?</h2>
-              <p className="text-gray-500 mb-6">Esta acción eliminará la tarjeta de match de ambos lados. No se puede deshacer.</p>
+              <h2 className="text-2xl font-black text-blue-950 mb-2">¿Eliminar esta conexión?</h2>
+              <p className="text-gray-500 mb-6">Esta acción eliminará la tarjeta de conexión de ambos lados. No se puede deshacer.</p>
               <div className="flex gap-4 justify-center">
                 <button onClick={handleDeleteConfirmed} className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-700">SÍ, ELIMINAR</button>
                 <button onClick={() => setConfirmDelete(null)} className="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300">CANCELAR</button>
@@ -441,20 +442,20 @@ const Postulantes = () => {
         {/* SECTOR MATCHES */}
         {confirmedMatches.length > 0 && (
           <div className="mb-8 border-2 border-green-400 rounded-2xl p-6 bg-green-50">
-            <h2 className="text-lg font-black text-green-800 mb-4">Matches Confirmados</h2>
+            <h2 className="text-lg font-black text-green-800 mb-4">Conexiones confirmadas</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {confirmedMatches.map((m) => {
                 const cand = findCandidateById(m.candidateId);
                 return (
                   <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm border border-green-200">
-                    <h3 className="font-bold text-blue-900">{m.jobTitle}</h3>
+                    <h3 className="font-bold text-blue-900">{titleCase(m.jobTitle)}</h3>
                     <p className="text-xs text-gray-500">{m.department}</p>
                     {cand && <p className="text-sm text-green-700 font-semibold mt-1">Candidato: {cand.fullName}</p>}
                     <p className="text-sm text-gray-600 mt-1">{m.description}</p>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold mt-2 inline-block">{Math.round(m.score)}% match</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold mt-2 inline-block">{Math.round(m.score)}% compatibilidad</span>
                     <div className="flex gap-2 mt-3">
                       {cand && <button onClick={() => setViewCandidate(cand)} className="text-xs text-blue-500 hover:text-blue-700 font-bold">Ver CV</button>}
-                      <button onClick={() => setConfirmDelete(m.id)} className="text-xs text-red-400 hover:text-red-600 font-bold">Eliminar Match</button>
+                      <button onClick={() => setConfirmDelete(m.id)} className="text-xs text-red-400 hover:text-red-600 font-bold">Eliminar conexión</button>
                     </div>
                   </div>
                 );
@@ -579,14 +580,14 @@ const Postulantes = () => {
                     </div>
                     {matchData.jobTitle && (
                       <p className="text-[10px] text-gray-400 mt-1">
-                        {vacancyView === "Todas" ? "Mejor match: " : "Puesto: "}{matchData.jobTitle}
+                        {vacancyView === "Todas" ? "Mejor compatibilidad: " : "Puesto: "}{titleCase(matchData.jobTitle)}
                       </p>
                     )}
                     {matchData.id && (
                       <div className="mt-1">
                         {!explanations[matchData.id] && (
                           <button onClick={() => loadExplanation(matchData.id)} className="text-[10px] text-blue-500 hover:underline font-bold">
-                            {explLoading === matchData.id ? "Generando..." : "¿Por qué este match?"}
+                            {explLoading === matchData.id ? "Generando..." : "¿Por qué esta compatibilidad?"}
                           </button>
                         )}
                         {explanations[matchData.id] && <p className="text-[11px] text-gray-500 mt-1 italic">{explanations[matchData.id]}</p>}
@@ -601,7 +602,7 @@ const Postulantes = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-blue-900 flex items-center gap-2">
-                      {c.fullName}
+                      {titleCase(c.fullName)}
                       {sePostulo(c.id) && (
                         <span title="Este candidato se postuló activamente" className="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
                           Se postuló
@@ -622,7 +623,7 @@ const Postulantes = () => {
                   <button
                     onClick={() => openMatchPopup(c)}
                     className="flex-1 bg-blue-600 text-white py-2 rounded-xl text-xs font-bold hover:bg-blue-700"
-                  >MATCH</button>
+                  >CONECTAR</button>
                 </div>
               </motion.div>
             );

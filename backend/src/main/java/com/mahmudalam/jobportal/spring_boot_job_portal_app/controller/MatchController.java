@@ -301,6 +301,84 @@ public class MatchController {
         return ResponseEntity.ok(bestByCandidate);
     }
 
+    /**
+     * Reporte de contratación para la empresa: por cada vacante y en total, cuántos
+     * candidatos se postularon, cuántos fueron conectados (MATCHED), rechazados
+     * (REJECTED) y cuántos siguen sin respuesta (postulados pero PENDING), más la
+     * compatibilidad promedio de los postulantes y las postulaciones del mes actual.
+     */
+    @GetMapping("/recruiter/{recruiterId}/report")
+    public ResponseEntity<?> getRecruiterReport(@PathVariable String recruiterId) {
+        List<VacancyModel> myVacancies = vacancyRepository.findByRecruiterId(recruiterId);
+
+        List<Map<String, Object>> porVacante = new java.util.ArrayList<>();
+        int totPostulados = 0, totConectados = 0, totRechazados = 0, totSinResponder = 0, totMes = 0;
+        double sumaCompat = 0;
+        int contCompat = 0;
+        List<Map<String, Object>> sinResponderLista = new java.util.ArrayList<>();
+        LocalDateTime inicioMes = LocalDateTime.now().withDayOfMonth(1).toLocalDate().atStartOfDay();
+
+        for (VacancyModel v : myVacancies) {
+            List<MatchModel> matches = matchRepository.findByVacancyIdOrderByScoreDesc(v.getId());
+
+            int postulados = 0, conectados = 0, rechazados = 0, sinResponder = 0;
+            double sumaV = 0;
+            int contV = 0;
+
+            for (MatchModel m : matches) {
+                if ("MATCHED".equals(m.getStatus())) conectados++;
+                if ("REJECTED".equals(m.getStatus())) rechazados++;
+                if (m.isCandidateApplied()) {
+                    postulados++;
+                    sumaV += m.getScore();
+                    contV++;
+                    if ("PENDING".equals(m.getStatus())) {
+                        sinResponder++;
+                        sinResponderLista.add(Map.of(
+                                "candidateId", m.getCandidateId() != null ? m.getCandidateId() : "",
+                                "jobTitle", v.getJobTitle() != null ? v.getJobTitle() : "",
+                                "score", m.getScore(),
+                                "appliedAt", m.getAppliedAt() != null ? m.getAppliedAt().toString() : ""
+                        ));
+                    }
+                    if (m.getAppliedAt() != null && m.getAppliedAt().isAfter(inicioMes)) totMes++;
+                }
+            }
+
+            porVacante.add(Map.of(
+                    "vacancyId", v.getId(),
+                    "jobTitle", v.getJobTitle() != null ? v.getJobTitle() : "",
+                    "postulados", postulados,
+                    "conectados", conectados,
+                    "rechazados", rechazados,
+                    "sinResponder", sinResponder,
+                    "compatibilidadProm", contV > 0 ? Math.round(sumaV / contV) : 0
+            ));
+
+            totPostulados += postulados;
+            totConectados += conectados;
+            totRechazados += rechazados;
+            totSinResponder += sinResponder;
+            sumaCompat += sumaV;
+            contCompat += contV;
+        }
+
+        Map<String, Object> resumen = new java.util.HashMap<>();
+        resumen.put("totalVacantes", myVacancies.size());
+        resumen.put("postulados", totPostulados);
+        resumen.put("conectados", totConectados);
+        resumen.put("rechazados", totRechazados);
+        resumen.put("sinResponder", totSinResponder);
+        resumen.put("postulacionesDelMes", totMes);
+        resumen.put("compatibilidadPromedio", contCompat > 0 ? (int) Math.round(sumaCompat / contCompat) : 0);
+
+        return ResponseEntity.ok(Map.of(
+                "resumen", resumen,
+                "porVacante", porVacante,
+                "sinResponderLista", sinResponderLista
+        ));
+    }
+
     /** Explicación del match en lenguaje natural (generada por LLM, on-demand y cacheada) */
     @GetMapping("/{matchId}/explanation")
     public ResponseEntity<?> getExplanation(@PathVariable String matchId) {

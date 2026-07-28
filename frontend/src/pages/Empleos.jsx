@@ -13,6 +13,7 @@ import {
   getMatchExplanation,
   applyToVacancy,
 } from "../api/api";
+import { titleCase } from "../utils/format";
 
 const Empleos = () => {
   const { userId } = useAuthStore();
@@ -172,16 +173,16 @@ const Empleos = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* POP-UP DE MATCH */}
+      {/* POP-UP DE CONEXIÓN */}
       <AnimatePresence>
         {showPopup && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowPopup(false)}>
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 text-center" onClick={(e) => e.stopPropagation()}>
               <div className="text-6xl mb-4">🎉</div>
-              <h2 className="text-2xl font-black text-blue-950 mb-4">¡Haz hecho Match Laboral!</h2>
+              <h2 className="text-2xl font-black text-blue-950 mb-4">¡Hiciste una conexión laboral!</h2>
               {popupData.map((n) => (
                 <p key={n.id} className="text-gray-600 mb-2">
-                  Haz hecho match empresarial con <span className="font-bold text-blue-600">{n.companyName}</span> para el puesto de <span className="font-bold">{n.jobTitle}</span>
+                  Conectaste con <span className="font-bold text-blue-600">{titleCase(n.companyName)}</span> para el puesto de <span className="font-bold">{titleCase(n.jobTitle)}</span>
                 </p>
               ))}
               <button onClick={() => setShowPopup(false)} className="mt-6 bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all">
@@ -198,12 +199,12 @@ const Empleos = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setViewVacancy(null)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-white rounded-3xl p-8 max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between mb-4">
-                <h2 className="text-2xl font-black text-blue-950">{viewVacancy.jobTitle}</h2>
+                <h2 className="text-2xl font-black text-blue-950">{titleCase(viewVacancy.jobTitle)}</h2>
                 <span className={`text-xs px-2 py-1 rounded-full font-bold flex-shrink-0 ml-3 ${viewVacancy.status === "Abierta" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{viewVacancy.status}</span>
               </div>
 
-              <p className="text-blue-600 font-bold">{viewVacancy.companyName}</p>
-              <p className="text-sm text-gray-500">{viewVacancy.department}</p>
+              <p className="text-blue-600 font-bold">{titleCase(viewVacancy.companyName)}</p>
+              <p className="text-sm text-gray-500">{titleCase(viewVacancy.department)}</p>
 
               {viewVacancy.description && (
                 <div className="mt-4">
@@ -288,7 +289,7 @@ const Empleos = () => {
                   <div className="mt-2">
                     {!explanations[candidateScores[viewVacancy.id].id] && (
                       <button onClick={() => loadExplanation(candidateScores[viewVacancy.id].id)} className="text-xs text-blue-600 hover:underline font-bold">
-                        {explLoading === candidateScores[viewVacancy.id].id ? "Generando explicación..." : "¿Por qué este match?"}
+                        {explLoading === candidateScores[viewVacancy.id].id ? "Generando explicación..." : "¿Por qué esta compatibilidad?"}
                       </button>
                     )}
                     {explanations[candidateScores[viewVacancy.id].id] && (
@@ -331,7 +332,7 @@ const Empleos = () => {
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl">🏢</div>
                 <h2 className="text-xl font-black text-blue-950">Contactar Empresa</h2>
-                <p className="text-sm text-gray-400 mt-1">Puesto: {contactPopup.vacancy.jobTitle}</p>
+                <p className="text-sm text-gray-400 mt-1">Puesto: {titleCase(contactPopup.vacancy.jobTitle)}</p>
               </div>
 
               <div className="space-y-4">
@@ -397,19 +398,19 @@ const Empleos = () => {
           <h1 className="text-3xl font-black text-blue-950">Empleos</h1>
         </div>
 
-        {/* SECTOR MATCHES */}
+        {/* SECTOR CONEXIONES */}
         {matches.length > 0 && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 border-2 border-green-400 rounded-2xl p-6 bg-green-50">
-            <h2 className="text-lg font-black text-green-800 mb-4">Haz hecho match con las siguientes empresas</h2>
+            <h2 className="text-lg font-black text-green-800 mb-4">Conectaste con las siguientes empresas</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {matches.map((m) => (
                 <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm border border-green-200">
-                  <h3 className="font-bold text-blue-900">{m.jobTitle}</h3>
-                  <p className="text-sm text-green-700 font-semibold">{m.companyName}</p>
-                  <p className="text-xs text-gray-500 mt-1">{m.department}</p>
+                  <h3 className="font-bold text-blue-900">{titleCase(m.jobTitle)}</h3>
+                  <p className="text-sm text-green-700 font-semibold">{titleCase(m.companyName)}</p>
+                  <p className="text-xs text-gray-500 mt-1">{titleCase(m.department)}</p>
                   <p className="text-xs text-gray-400 mt-1">{m.description}</p>
                   <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">{Math.round(m.score)}% match</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">{Math.round(m.score)}% compatibilidad</span>
                     <button onClick={() => handleRejectMatch(m.id)} className="text-xs text-red-400 hover:text-red-600">Rechazar</button>
                   </div>
                   <button onClick={() => openContact({ jobTitle: m.jobTitle, recruiterId: m.recruiterId, companyName: m.companyName, companyPhone1: "", companyPhone2: "" })} className="w-full mt-3 bg-green-500 text-white py-2 rounded-xl text-xs font-bold hover:bg-green-600 transition-all">
@@ -432,11 +433,11 @@ const Empleos = () => {
                 return (
                   <div key={v.id} className="bg-white rounded-xl p-4 shadow-sm border border-blue-200 flex flex-col">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-blue-900 text-sm leading-tight">{v.jobTitle}</h3>
+                      <h3 className="font-bold text-blue-900 text-sm leading-tight">{titleCase(v.jobTitle)}</h3>
                       <span className="text-xs font-black px-2 py-0.5 rounded-full bg-green-100 text-green-700 flex-shrink-0">{s}%</span>
                     </div>
-                    <p className="text-xs text-blue-600 font-semibold mt-1">{v.companyName}</p>
-                    <p className="text-[11px] text-gray-500">{v.department}</p>
+                    <p className="text-xs text-blue-600 font-semibold mt-1">{titleCase(v.companyName)}</p>
+                    <p className="text-[11px] text-gray-500">{titleCase(v.department)}</p>
                     <div className="w-full bg-blue-100 rounded-full h-1.5 mt-2">
                       <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${s}%` }}></div>
                     </div>
@@ -532,11 +533,11 @@ const Empleos = () => {
             return (
               <motion.div key={v.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all flex flex-col">
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-bold text-blue-900">{v.jobTitle}</h3>
+                  <h3 className="text-lg font-bold text-blue-900">{titleCase(v.jobTitle)}</h3>
                   <span className={`text-xs px-2 py-1 rounded-full font-bold flex-shrink-0 ml-2 ${v.status === "Abierta" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{v.status}</span>
                 </div>
-                <p className="text-sm text-blue-600 font-semibold">{v.companyName}</p>
-                <p className="text-xs text-gray-500 mt-1">{v.department}</p>
+                <p className="text-sm text-blue-600 font-semibold">{titleCase(v.companyName)}</p>
+                <p className="text-xs text-gray-500 mt-1">{titleCase(v.department)}</p>
                 <p className="text-sm text-gray-600 mt-3">{v.description}</p>
                 <div className="mt-4 flex flex-wrap gap-1">
                   {v.requiredTechnicalSkills?.map((s, i) => (
