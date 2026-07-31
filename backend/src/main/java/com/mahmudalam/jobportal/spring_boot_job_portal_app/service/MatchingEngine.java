@@ -6,12 +6,15 @@ import com.mahmudalam.jobportal.spring_boot_job_portal_app.repository.MatchRepos
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Motor de matching ponderado. Los pesos de cada criterio son configurables
@@ -82,26 +85,46 @@ public class MatchingEngine {
      * y faltantes), usado tanto por el score persistido como por la explicación LLM.
      */
     public MatchBreakdown calculateBreakdown(CandidateProfileModel candidate, VacancyModel vacancy) {
+        SkillMatchResult affinity  = matchRoleAffinityDetailed(candidate, vacancy);
         SkillMatchResult technical = matchTechnicalSkillsDetailed(candidate, vacancy);
-        SkillMatchResult soft = matchSoftSkillsDetailed(candidate, vacancy);
-        SkillMatchResult language = matchLanguagesDetailed(candidate, vacancy);
+        SkillMatchResult soft      = matchSoftSkillsDetailed(candidate, vacancy);
+        SkillMatchResult language  = matchLanguagesDetailed(candidate, vacancy);
 
         double candidateYears = calculateTotalYearsExperience(candidate);
         double experienceScore = matchExperience(candidateYears, vacancy);
         double salaryScore = matchSalary(candidate, vacancy);
         double workTypeScore = matchWorkType(candidate, vacancy);
 
-        double weighted = technical.score() * weights.getTechnical()
-                + soft.score() * weights.getSoft()
-                + experienceScore * weights.getExperience()
-                + salaryScore * weights.getSalary()
-                + workTypeScore * weights.getWorkType()
-                + language.score() * weights.getLanguage();
+        // Renormalización: solo cuentan los criterios que APLICAN (la vacante especifica el requisito).
+        // Un criterio ausente NO regala puntaje: se excluye del promedio ponderado.
+        double weightedSum = 0, appliedWeight = 0;
 
-        double total = Math.min(100.0, weighted * 100);
+        if (!roleKeywords(vacancy).isEmpty()) {
+            weightedSum += affinity.score() * weights.getAffinity();   appliedWeight += weights.getAffinity();
+        }
+        if (notEmpty(vacancy.getRequiredTechnicalSkills())) {
+            weightedSum += technical.score() * weights.getTechnical(); appliedWeight += weights.getTechnical();
+        }
+        if (notEmpty(vacancy.getDesiredSoftSkills())) {
+            weightedSum += soft.score() * weights.getSoft();           appliedWeight += weights.getSoft();
+        }
+        if (notEmpty(vacancy.getRequiredLanguages())) {
+            weightedSum += language.score() * weights.getLanguage();   appliedWeight += weights.getLanguage();
+        }
+        // La experiencia siempre aplica
+        weightedSum += experienceScore * weights.getExperience();      appliedWeight += weights.getExperience();
+        if (candidate.getExpectedSalary() != null && vacancy.getSalaryRange() != null) {
+            weightedSum += salaryScore * weights.getSalary();          appliedWeight += weights.getSalary();
+        }
+        if (candidate.getWorkType() != null && vacancy.getWorkAvailability() != null) {
+            weightedSum += workTypeScore * weights.getWorkType();      appliedWeight += weights.getWorkType();
+        }
+
+        double total = appliedWeight > 0 ? Math.min(100.0, (weightedSum / appliedWeight) * 100) : 0.0;
 
         return new MatchBreakdown(
                 total,
+                affinity.score(), affinity.matched(), affinity.missing(),
                 technical.score(), technical.matched(), technical.missing(),
                 soft.score(), soft.matched(), soft.missing(),
                 experienceScore, candidateYears, vacancy.getMinExperienceYears(),
@@ -109,6 +132,70 @@ public class MatchingEngine {
                 workTypeScore,
                 language.score(), language.matched(), language.missing()
         );
+    }
+
+    private static boolean notEmpty(List<?> list) {
+        return list != null && !list.isEmpty();
+    }
+
+    // ---- Afinidad vocacional (rubro de la vacante vs. trayectoria del candidato) ----
+
+    private static final Set<String> STOPWORDS = Set.of(
+            "de", "la", "el", "y", "en", "para", "con", "del", "los", "las",
+            "un", "una", "por", "a", "o", "al", "su", "sus", "e");
+
+    private String stripAccents(String s) {
+        return Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+    }
+
+    /** Tokeniza uno o más textos: minúsculas, sin acentos, sin stopwords, tokens de >= 3 letras. */
+    private Set<String> tokens(String... parts) {
+        Set<String> set = new HashSet<>();
+        for (String part : parts) {
+            if (part == null) continue;
+            for (String tok : stripAccents(part.toLowerCase()).split("[^a-z0-9]+")) {
+                if (tok.length() >= 3 && !STOPWORDS.contains(tok)) set.add(tok);
+            }
+        }
+        return set;
+    }
+
+    /** Palabras que describen el rol de la vacante (título + área). */
+    private Set<String> roleKeywords(VacancyModel v) {
+        return tokens(v.getJobTitle(), v.getDepartment());
+    }
+
+    /** Palabras de la trayectoria del candidato: cargos, educación, certificaciones, habilidades. */
+    private Set<String> candidateKeywords(CandidateProfileModel c) {
+        Set<String> set = new HashSet<>();
+        if (c.getWorkExperience() != null)
+            for (CandidateProfileModel.WorkExperience w : c.getWorkExperience()) set.addAll(tokens(w.getTitle()));
+        if (c.getEducations() != null)
+            for (CandidateProfileModel.EducationEntry e : c.getEducations()) set.addAll(tokens(e.getDegree()));
+        if (c.getCertifications() != null)
+            for (CandidateProfileModel.CertificationEntry ce : c.getCertifications()) set.addAll(tokens(ce.getName()));
+        if (c.getTechnicalSkills() != null)
+            for (CandidateProfileModel.SkillTag s : c.getTechnicalSkills()) set.addAll(tokens(s.getName()));
+        if (c.getSoftSkills() != null)
+            for (String ss : c.getSoftSkills()) set.addAll(tokens(ss));
+        return set;
+    }
+
+    private SkillMatchResult matchRoleAffinityDetailed(CandidateProfileModel c, VacancyModel v) {
+        Set<String> role = roleKeywords(v);
+        if (role.isEmpty()) {
+            return new SkillMatchResult(1.0, new ArrayList<>(), new ArrayList<>());
+        }
+        Set<String> cand = candidateKeywords(c);
+        List<String> matched = new ArrayList<>();
+        List<String> missing = new ArrayList<>();
+        for (String r : role) {
+            boolean hit = cand.contains(r) || cand.stream().anyMatch(k ->
+                    (r.length() >= 4 && k.contains(r)) || (k.length() >= 4 && r.contains(k)));
+            if (hit) matched.add(r); else missing.add(r);
+        }
+        double score = (double) matched.size() / role.size();
+        return new SkillMatchResult(score, matched, missing);
     }
 
     // ---- Habilidades técnicas ----

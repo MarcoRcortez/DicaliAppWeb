@@ -77,6 +77,9 @@ public class MatchExplanationService {
         sb.append("Explica en lenguaje natural por qué este candidato es (o no) compatible ")
           .append("con la vacante \"").append(jobTitle != null ? jobTitle : "sin título").append("\".\n\n");
         sb.append("Puntaje total de compatibilidad: ").append(Math.round(b.totalScore())).append("%.\n");
+        sb.append("Afinidad con el rubro (").append(Math.round(b.affinityScore() * 100)).append("%): coincide en ")
+          .append(fmt(b.matchedRoleKeywords())).append("; el rol menciona ")
+          .append(fmt(b.missingRoleKeywords())).append(" que no aparecen en su trayectoria.\n");
         sb.append("Habilidades técnicas coincidentes: ").append(fmt(b.matchedTechnicalSkills())).append(".\n");
         sb.append("Habilidades técnicas faltantes: ").append(fmt(b.missingTechnicalSkills())).append(".\n");
         sb.append("Habilidades blandas coincidentes: ").append(fmt(b.matchedSoftSkills())).append(".\n");
@@ -95,6 +98,9 @@ public class MatchExplanationService {
     private String buildFallback(MatchBreakdown b) {
         StringBuilder sb = new StringBuilder();
         sb.append("Compatibilidad del ").append(Math.round(b.totalScore())).append("%. ");
+        if (!b.matchedRoleKeywords().isEmpty()) {
+            sb.append("Afinidad con el rubro: ").append(fmt(b.matchedRoleKeywords())).append(". ");
+        }
         if (!b.matchedTechnicalSkills().isEmpty()) {
             sb.append("Coincide en: ").append(fmt(b.matchedTechnicalSkills())).append(". ");
         }

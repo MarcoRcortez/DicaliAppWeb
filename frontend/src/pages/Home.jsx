@@ -59,7 +59,7 @@ const Home = () => {
       <section className="py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-12">
           {[
-            { icon: "🤖", title: "Compatibilidad Inteligente", desc: "Algoritmo ponderado que cruza habilidades técnicas (55%), blandas (20%), experiencia (10%), idiomas (5%), salario (5%) y disponibilidad (5%)." },
+            { icon: "🤖", title: "Compatibilidad Inteligente", desc: "Algoritmo ponderado que cruza afinidad con el rubro (30%), habilidades técnicas (30%), blandas (15%), experiencia (10%), idiomas (5%), salario (5%) y disponibilidad (5%)." },
             { icon: "📋", title: "CV Digital Estructurado", desc: "Formulario completo con habilidades por niveles, experiencia laboral, idiomas y expectativa salarial — sin PDFs desordenados." },
             { icon: "📊", title: "Dashboard en Tiempo Real", desc: "Panel administrativo con gráficos de embudo, usuarios activos y seguimiento de conexiones confirmadas." },
           ].map((item, i) => (

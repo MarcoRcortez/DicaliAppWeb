@@ -42,8 +42,10 @@ ollama.read-timeout-ms=60000
 ollama.enabled=true
 
 # ── Pesos del motor de matching (deben sumar 1.0) ──
-matching.weights.technical=0.55
-matching.weights.soft=0.20
+# affinity = afinidad con el rubro/trayectoria (cargo, educacion, certificaciones)
+matching.weights.affinity=0.30
+matching.weights.technical=0.30
+matching.weights.soft=0.15
 matching.weights.experience=0.10
 matching.weights.salary=0.05
 matching.weights.work-type=0.05

@@ -16,8 +16,10 @@ import org.springframework.stereotype.Component;
 @Data
 @Slf4j
 public class MatchingWeightsProperties {
-    private double technical = 0.55;
-    private double soft = 0.20;
+    /** Afinidad con el rubro/trayectoria profesional (cargo, educación, certificaciones) */
+    private double affinity = 0.30;
+    private double technical = 0.30;
+    private double soft = 0.15;
     private double experience = 0.10;
     private double salary = 0.05;
     private double workType = 0.05;
@@ -25,7 +27,7 @@ public class MatchingWeightsProperties {
 
     @PostConstruct
     public void validateSum() {
-        double sum = technical + soft + experience + salary + workType + language;
+        double sum = affinity + technical + soft + experience + salary + workType + language;
         if (Math.abs(sum - 1.0) > 0.005) {
             log.warn("matching.weights.* no suman 1.0 (suman {}). Los scores pueden exceder o no alcanzar el 100%.", sum);
         }

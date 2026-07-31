@@ -22,7 +22,9 @@ class MatchingEngineTest {
 
     private MatchingEngine engine;
 
-    /** Pesos por defecto: técnicas .55, blandas .20, experiencia .10, salario .05, tipo .05, idiomas .05 */
+    /** Pesos por defecto: afinidad .30, técnicas .30, blandas .15, experiencia .10, salario .05, tipo .05, idiomas .05.
+     *  El total se renormaliza sobre los criterios que APLICAN (la vacante base no tiene jobTitle/área,
+     *  así que la afinidad no aplica y el denominador es 0.70). */
     @BeforeEach
     void setUp() {
         engine = new MatchingEngine(mock(MatchRepository.class), new MatchingWeightsProperties());
@@ -117,12 +119,13 @@ class MatchingEngineTest {
     // ── Criterio de idiomas (peso 0.05) ──
 
     @Test
-    void faltaIdiomaRequeridoRestaExactamenteElPesoDeIdiomas() {
+    void faltaIdiomaRequeridoRestaElPesoDeIdiomasRenormalizado() {
         CandidateProfileModel c = candidate();
         c.setLanguages(List.of(candidateLang("Frances", "C1"))); // no tiene el idioma pedido
 
-        // 100 - (0.05 * 100) = 95
-        assertEquals(95.0, engine.calculateScore(c, vacancy()), 0.01);
+        // Criterios que aplican suman 0.70 (afinidad no aplica: la vacante base no tiene título).
+        // Se pierde el peso de idiomas: (0.70 - 0.05) / 0.70 = 0.92857 → 92.86%
+        assertEquals(92.857, engine.calculateScore(c, vacancy()), 0.05);
     }
 
     @Test
@@ -172,7 +175,8 @@ class MatchingEngineTest {
 
         MatchBreakdown b = engine.calculateBreakdown(c, v);
         assertEquals(0.5, b.experienceScore(), 0.01);
-        assertEquals(95.0, b.totalScore(), 0.1); // pierde la mitad del peso 0.10 → -5
+        // Pierde la mitad del peso de experiencia (0.05) sobre el denominador 0.70 → (0.70-0.05)/0.70
+        assertEquals(92.857, b.totalScore(), 0.05);
     }
 
     @Test
@@ -278,6 +282,7 @@ class MatchingEngineTest {
     @Test
     void losPesosConfiguradosCambianElScore() {
         MatchingWeightsProperties w = new MatchingWeightsProperties();
+        w.setAffinity(0.0);
         w.setTechnical(1.0); // todo el peso en técnicas
         w.setSoft(0.0);
         w.setExperience(0.0);
@@ -290,5 +295,88 @@ class MatchingEngineTest {
         c.setLanguages(null); // ya no debe importar
 
         assertEquals(100.0, soloTecnicas.calculateScore(c, vacancy()), 0.01);
+    }
+
+    // ── Afinidad vocacional ──
+
+    /** Candidata claramente orientada a secretaria (experiencia, educación, certificación). */
+    private CandidateProfileModel secretaria() {
+        CandidateProfileModel c = new CandidateProfileModel();
+        c.setWorkExperience(List.of(
+                expWithTitle("Secretaria", "2020-01-01", "2024-01-01"),
+                expWithTitle("Recepcionista", "2018-01-01", "2020-01-01")));
+        c.setEducations(List.of(education("Administración de Empresas", "Universidad UDABOL")));
+        c.setCertifications(List.of(certification("Secretariado Ejecutivo", "INCOS")));
+        c.setTechnicalSkills(List.of(skill("Office", "AVANZADO")));
+        c.setSoftSkills(List.of("Organización"));
+        c.setExpectedSalary(salary(0, 3350));
+        c.setWorkType("presencial La Paz");
+        return c;
+    }
+
+    private VacancyModel vacantePuesto(String jobTitle, String department, double salMin, double salMax) {
+        VacancyModel v = new VacancyModel();
+        v.setJobTitle(jobTitle);
+        v.setDepartment(department);
+        v.setWorkAvailability("tiempo completo");
+        v.setSalaryRange(vacancySalary(salMin, salMax));
+        v.setExperienceLevel("sin experiencia");
+        return v; // sin habilidades/idiomas requeridos, como en el caso real
+    }
+
+    private CandidateProfileModel.WorkExperience expWithTitle(String title, String start, String end) {
+        CandidateProfileModel.WorkExperience w = experience(start, end);
+        w.setTitle(title);
+        return w;
+    }
+
+    private CandidateProfileModel.EducationEntry education(String degree, String institution) {
+        CandidateProfileModel.EducationEntry e = new CandidateProfileModel.EducationEntry();
+        e.setDegree(degree);
+        e.setInstitution(institution);
+        return e;
+    }
+
+    private CandidateProfileModel.CertificationEntry certification(String name, String institution) {
+        CandidateProfileModel.CertificationEntry ce = new CandidateProfileModel.CertificationEntry();
+        ce.setName(name);
+        ce.setInstitution(institution);
+        return ce;
+    }
+
+    @Test
+    void priorizaVacantesAfinesAlPerfilDelCandidato() {
+        CandidateProfileModel sec = secretaria();
+        VacancyModel vSecretaria = vacantePuesto("Secretaria Recepcionista", "Administración", 1500, 3350);
+        VacancyModel vDiseno = vacantePuesto("Diseñador Gráfico", "Diseño", 1000, 2000);
+
+        double scoreSecretaria = engine.calculateScore(sec, vSecretaria);
+        double scoreDiseno = engine.calculateScore(sec, vDiseno);
+
+        assertTrue(scoreSecretaria > scoreDiseno,
+                "La vacante afín (secretaria=" + scoreSecretaria + ") debe superar a la no afín (diseño=" + scoreDiseno + ")");
+    }
+
+    @Test
+    void afinidadUsaCargoEducacionYCertificacion() {
+        MatchBreakdown b = engine.calculateBreakdown(secretaria(),
+                vacantePuesto("Secretaria", "Recepcion", 1500, 3350));
+        assertTrue(b.affinityScore() > 0.0);
+        assertTrue(b.matchedRoleKeywords().contains("secretaria"),
+                "debe detectar 'secretaria' en la trayectoria → " + b.matchedRoleKeywords());
+    }
+
+    @Test
+    void vacanteSinRequisitosNoInflaParaPerfilNoAfin() {
+        // Vacante de diseño sin requisitos; una secretaria no debería llegar a ~100%.
+        double score = engine.calculateScore(secretaria(), vacantePuesto("Diseñador Gráfico", "Diseño", 1000, 2000));
+        assertTrue(score < 70.0, "un perfil no afín no debe inflar en una vacante sin requisitos → " + score);
+    }
+
+    @Test
+    void vacanteSinTituloNoAplicaAfinidad() {
+        // La vacante base no tiene jobTitle → la afinidad no aplica y no penaliza.
+        MatchBreakdown b = engine.calculateBreakdown(candidate(), vacancy());
+        assertEquals(100.0, b.totalScore(), 0.01);
     }
 }

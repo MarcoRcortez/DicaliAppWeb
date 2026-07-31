@@ -8,6 +8,7 @@ import java.util.List;
  */
 public record MatchBreakdown(
         double totalScore,
+        double affinityScore, List<String> matchedRoleKeywords, List<String> missingRoleKeywords,
         double technicalScore, List<String> matchedTechnicalSkills, List<String> missingTechnicalSkills,
         double softScore, List<String> matchedSoftSkills, List<String> missingSoftSkills,
         double experienceScore, double candidateYearsExperience, Integer minYearsRequired,
