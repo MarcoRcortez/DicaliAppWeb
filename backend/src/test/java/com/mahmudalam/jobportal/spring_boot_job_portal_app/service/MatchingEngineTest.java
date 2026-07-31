@@ -320,6 +320,35 @@ class MatchingEngineTest {
         assertEquals(0.5, engine.calculateBreakdown(c, v).workTypeScore(), 0.01);
     }
 
+    // ── Salario (criterio salary) ──
+
+    @Test
+    void salarioConSolapamientoEsPerfecto() {
+        CandidateProfileModel c = candidate();
+        c.setExpectedSalary(salary(3000, 6000));
+        VacancyModel v = vacancy();
+        v.setSalaryRange(vacancySalary(4000, 7000)); // se solapan
+        assertEquals(1.0, engine.calculateBreakdown(c, v).salaryScore(), 0.01);
+    }
+
+    @Test
+    void candidatoPideMasReduceElScoreProporcionalmente() {
+        CandidateProfileModel c = candidate();
+        c.setExpectedSalary(salary(9000, 10000));    // pide muy por encima
+        VacancyModel v = vacancy();
+        v.setSalaryRange(vacancySalary(4000, 7000)); // cMin 9000 > vMax 7000 → 1 - 2000/7000 ≈ 0.714
+        assertEquals(0.714, engine.calculateBreakdown(c, v).salaryScore(), 0.01);
+    }
+
+    @Test
+    void candidatoPideMenosSigueSiendoContratable() {
+        CandidateProfileModel c = candidate();
+        c.setExpectedSalary(salary(1000, 2000));     // pide por debajo del rango ofrecido
+        VacancyModel v = vacancy();
+        v.setSalaryRange(vacancySalary(4000, 7000)); // cMax 2000 < vMin 4000 → 1.0 (contratable)
+        assertEquals(1.0, engine.calculateBreakdown(c, v).salaryScore(), 0.01);
+    }
+
     // ── Pesos configurables ──
 
     @Test

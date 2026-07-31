@@ -325,21 +325,30 @@ public class MatchingEngine {
 
     // ---- Salario ----
 
+    /**
+     * Compatibilidad salarial entre la expectativa del candidato y el rango de la vacante.
+     * <ul>
+     *   <li>Rangos que se solapan → 1.0.</li>
+     *   <li>El candidato pide <b>más</b> de lo ofrecido ({@code cMin > vMax}) → penalización
+     *       proporcional al exceso: {@code max(0, 1 - (cMin - vMax)/vMax)}.</li>
+     *   <li>El candidato pide <b>menos</b> de lo ofrecido ({@code cMax < vMin}) → 1.0: un
+     *       postulante cuya expectativa está por debajo del rango es perfectamente contratable;
+     *       no corresponde penalizarlo (antes devolvía 0.5, lo cual era incorrecto).</li>
+     * </ul>
+     * La guarda de nulos se conserva como defensa, aunque {@code calculateBreakdown} solo aplica
+     * este criterio cuando ambos rangos existen, por lo que en la práctica no se alcanza.
+     */
     private double matchSalary(CandidateProfileModel c, VacancyModel v) {
-        if (c.getExpectedSalary() == null || v.getSalaryRange() == null) return 0.5;
+        if (c.getExpectedSalary() == null || v.getSalaryRange() == null) return 0.5; // guarda defensiva (no alcanzable vía calculateBreakdown)
 
         double cMin = c.getExpectedSalary().getMin();
         double cMax = c.getExpectedSalary().getMax();
         double vMin = v.getSalaryRange().getMin();
         double vMax = v.getSalaryRange().getMax();
 
-        // Hay solapamiento entre rangos
-        if (cMin <= vMax && vMin <= cMax) return 1.0;
-
-        // Candidato pide más de lo ofrecido
-        if (cMin > vMax) return Math.max(0, 1 - (cMin - vMax) / vMax);
-
-        return 0.5;
+        if (cMin <= vMax && vMin <= cMax) return 1.0;                  // solapamiento
+        if (cMin > vMax) return Math.max(0, 1 - (cMin - vMax) / vMax); // pide más → penalización proporcional
+        return 1.0;                                                    // pide menos de lo ofrecido → contratable
     }
 
     // ---- Disponibilidad horaria ----
