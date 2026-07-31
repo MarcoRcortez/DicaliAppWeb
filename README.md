@@ -71,6 +71,13 @@ Otros comandos: `mvn test` (tests), `mvn package` (jar).
 > `application.properties.example` trae valores por defecto que funcionan; solo debes reemplazar
 > `jwt.secret` (y, si usas correo, las credenciales de mail).
 
+> **Pesos del matching (reproducibilidad).** Los pesos de los criterios y el piso del filtro de
+> afinidad **viven en el código** (`config/MatchingWeightsProperties.java`) y se replican en
+> `application.properties.example`. Ambas fuentes son idénticas, así que **el sistema arranca con los
+> pesos correctos aunque no exista un `application.properties` local**; ese archivo solo hace falta para
+> sobreescribirlos o para los secretos. Un `@PostConstruct` registra un `WARN` al arrancar si los pesos
+> no suman 1.0.
+
 ### 2. Frontend (desde `frontend/`)
 
 ```bash
