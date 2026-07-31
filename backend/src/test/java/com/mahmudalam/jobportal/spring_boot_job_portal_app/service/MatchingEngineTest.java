@@ -40,7 +40,8 @@ class MatchingEngineTest {
         c.setLanguages(List.of(candidateLang("Ingles", "B2")));
         c.setWorkExperience(List.of(experience("2019-01-01", "2024-01-01"))); // ~5 años
         c.setExpectedSalary(salary(3000, 6000));
-        c.setWorkType("remoto");
+        c.setWorkType("remoto");                 // modalidad: NO interviene en el criterio de disponibilidad
+        c.setWorkSchedule("tiempo completo");    // horario: se compara contra vacancy.workAvailability
         return c;
     }
 
@@ -276,6 +277,47 @@ class MatchingEngineTest {
         MatchBreakdown b = engine.calculateBreakdown(c, vacancy());
         assertEquals(0.0, b.technicalScore(), 0.01);
         assertEquals(List.of("Java"), b.missingTechnicalSkills());
+    }
+
+    // ── Disponibilidad horaria (criterio workType) ──
+
+    @Test
+    void disponibilidadHorariaExactaCuentaCompleto() {
+        CandidateProfileModel c = candidate();
+        c.setWorkSchedule("tiempo completo");
+        VacancyModel v = vacancy();
+        v.setWorkAvailability("tiempo completo");
+        assertEquals(1.0, engine.calculateBreakdown(c, v).workTypeScore(), 0.01);
+    }
+
+    @Test
+    void disponibilidadIncompatibleDaCreditoParcial() {
+        CandidateProfileModel c = candidate();
+        c.setWorkSchedule("tiempo completo");
+        VacancyModel v = vacancy();
+        v.setWorkAvailability("medio tiempo");
+        assertEquals(0.5, engine.calculateBreakdown(c, v).workTypeScore(), 0.01);
+    }
+
+    @Test
+    void tiempoParcialYMedioTiempoSonEquivalentes() {
+        CandidateProfileModel c = candidate();
+        c.setWorkSchedule("tiempo parcial");
+        VacancyModel v = vacancy();
+        v.setWorkAvailability("medio tiempo");
+        assertEquals(1.0, engine.calculateBreakdown(c, v).workTypeScore(), 0.01);
+    }
+
+    @Test
+    void laModalidadRemotoYaNoInflaLaDisponibilidad() {
+        // Antes del fix, un candidato "remoto" sacaba 1.0 sin mirar la vacante.
+        // Ahora se compara el horario real: medio tiempo vs tiempo completo → 0.5.
+        CandidateProfileModel c = candidate();
+        c.setWorkType("remoto");
+        c.setWorkSchedule("medio tiempo");
+        VacancyModel v = vacancy();
+        v.setWorkAvailability("tiempo completo");
+        assertEquals(0.5, engine.calculateBreakdown(c, v).workTypeScore(), 0.01);
     }
 
     // ── Pesos configurables ──

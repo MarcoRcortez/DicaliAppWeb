@@ -114,7 +114,7 @@ public class MatchingEngine {
         if (candidate.getExpectedSalary() != null && vacancy.getSalaryRange() != null) {
             weightedSum += salaryScore * weights.getSalary();          appliedWeight += weights.getSalary();
         }
-        if (candidate.getWorkType() != null && vacancy.getWorkAvailability() != null) {
+        if (candidate.getWorkSchedule() != null && vacancy.getWorkAvailability() != null) {
             weightedSum += workTypeScore * weights.getWorkType();      appliedWeight += weights.getWorkType();
         }
 
@@ -342,14 +342,39 @@ public class MatchingEngine {
         return 0.5;
     }
 
-    // ---- Tipo de trabajo ----
+    // ---- Disponibilidad horaria ----
 
+    /**
+     * Compatibilidad de <b>disponibilidad horaria</b>: la del candidato
+     * ({@code workSchedule}) contra la que exige la vacante ({@code workAvailability}).
+     * <p>Valores del formulario — candidato: "tiempo completo" | "tiempo parcial" |
+     * "medio tiempo"; vacante: "tiempo completo" | "medio tiempo".
+     * <p><b>Tabla de compatibilidad</b> (tras normalizar "tiempo parcial" y
+     * "medio tiempo" al mismo grupo "parcial"):
+     * <pre>
+     *   candidato \ vacante   completo   parcial(medio)
+     *   completo                1.0          0.5
+     *   parcial(medio)          0.5          1.0
+     * </pre>
+     * El crédito parcial 0.5 refleja que un horario y otro no coinciden pero tampoco
+     * son excluyentes (quien está a tiempo completo puede cubrir un medio tiempo, y
+     * viceversa con reservas). Si falta el dato en cualquiera de los dos lados, el
+     * criterio no aplica y se excluye de la renormalización en {@code calculateBreakdown}.
+     * <p>NOTA: la <i>modalidad</i> del candidato ({@code workType}: presencial/remoto)
+     * NO interviene aquí; la vacante no captura modalidad, solo horario.
+     */
     private double matchWorkType(CandidateProfileModel c, VacancyModel v) {
-        if (c.getWorkType() == null || v.getWorkAvailability() == null) return 0.5;
+        if (c.getWorkSchedule() == null || v.getWorkAvailability() == null) return 0.5; // guarda defensiva
+        return normalizeSchedule(c.getWorkSchedule()).equals(normalizeSchedule(v.getWorkAvailability()))
+                ? 1.0 : 0.5;
+    }
 
-        boolean remoteMatch = "remoto".equalsIgnoreCase(c.getWorkType()) ||
-                              "presencial La Paz".equalsIgnoreCase(c.getWorkType());
-        return remoteMatch ? 1.0 : 0.5;
+    /** Agrupa las variantes de jornada: "medio tiempo" ≡ "tiempo parcial" ("parcial"); "tiempo completo" ("completo"). */
+    private String normalizeSchedule(String s) {
+        String x = stripAccents(s.toLowerCase()).trim();
+        if (x.contains("completo")) return "completo";
+        if (x.contains("parcial") || x.contains("medio")) return "parcial";
+        return x;
     }
 
     // ---- Helpers de nivel ----
