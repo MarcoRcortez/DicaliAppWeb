@@ -5,21 +5,33 @@ DICALI es un portal de empleo full-stack que conecta **candidatos** con **empres
 lenguaje local (Ollama)**. Cuentas por rol con autenticación JWT real, CV estructurado, vacantes con
 requisitos detallados y exportación del CV a PDF.
 
+> **Proyecto de Grado** desarrollado por **Marco Rodolfo Cortez**.
+>
+> _Universidad / Carrera / Año: (completar)_
+
 ## Características
 
 - **Autenticación real (JWT)** con tres roles: `CANDIDATE`, `RECRUITER`, `ADMIN` (contraseñas con
   bcrypt y recuperación por pregunta de seguridad).
 - **CV estructurado del candidato**: experiencia laboral con fechas, educación, habilidades técnicas
   (con nivel), habilidades blandas, idiomas (A1–C2/Nativo), certificaciones, expectativa salarial y
-  disponibilidad. Exportable a **PDF** desde el navegador.
+  disponibilidad. Exportable a **PDF** desde el navegador (el reclutador también puede descargar el CV
+  del postulante para imprimir).
 - **Vacantes**: habilidades técnicas requeridas (con nivel), habilidades blandas, idiomas requeridos,
   certificaciones deseadas, años mínimos de experiencia, rango salarial y modalidad.
-- **Motor de matching ponderado y configurable** (6 criterios): técnicas 55%, blandas 20%,
-  experiencia 10%, salario 5%, modalidad 5%, idiomas 5%. Los pesos se ajustan por configuración sin
-  recompilar. El score se calcula de forma **determinística** (reproducible).
+- **Motor de matching ponderado y configurable**: el score (0–100) se calcula de forma
+  **determinística** (reproducible) cruzando criterios de ajuste —experiencia (30%), habilidades
+  técnicas (25%), blandas (20%), salario (10%), modalidad (7.5%) e idiomas (7.5%)— renormalizados sobre
+  los que aplican en cada vacante. La **afinidad vocacional**, derivada de los **estudios y la
+  experiencia** del candidato, actúa como **filtro de relevancia**: si el candidato no tiene relación con
+  el rubro de la vacante, su compatibilidad baja de forma marcada (*un cocinero no aparece como un buen
+  match para diseño gráfico*). Los pesos y el filtro se ajustan por configuración sin recompilar.
+- **Postulaciones y conexiones**: los candidatos se postulan a las vacantes y la empresa confirma el
+  match; en *Postulantes* se distingue con claridad a los **interesados** (los que se postularon).
 - **Explicación del match con IA local (opcional)**: un LLM (Ollama, `gemma3:1b`) redacta *por qué* un
   candidato encaja con una vacante. Si Ollama no está disponible, se usa una explicación de respaldo
   determinística — la app funciona igual. **El LLM solo redacta; nunca calcula el score.**
+- **Reportes de la empresa**: resumen, gráficos y una tabla general de postulantes.
 - **Panel de administración**: estadísticas y gestión de usuarios, vacantes, perfiles y empresas.
 
 ## Stack
@@ -74,7 +86,8 @@ Otros comandos: `npm run build` (build de producción), `npm run lint` (ESLint).
 2. **Candidato** → *Mi Currículum*: llena tu CV estructurado (incluye idiomas y certificaciones).
    En *Empleos* ves las vacantes con tu **% de compatibilidad** y el botón *"¿Por qué este match?"*.
 3. **Empresa** → *Mi Empresa* (registra tus datos) y luego *Reclutar* (crea vacantes). En *Postulantes*
-   ves a los candidatos rankeados por compatibilidad, con su explicación.
+   ves a los candidatos rankeados por compatibilidad, con su explicación; y en *Reportes* el resumen y la
+   tabla de postulantes.
 
 ## Documentación de la API
 
@@ -84,9 +97,13 @@ Endpoints principales: `/api/auth`, `/api/candidate-profiles`, `/api/company-pro
 
 ## Arquitectura (resumen)
 
-- **Matching**: `service/MatchingEngine` calcula un score ponderado 0–100 por 6 criterios; persiste un
-  `MatchModel` por par candidato–vacante. Pesos vía `matching.weights.*`.
+- **Matching**: `service/MatchingEngine` calcula un score ponderado 0–100 y aplica el filtro de afinidad
+  vocacional; persiste un `MatchModel` por par candidato–vacante. Pesos y piso del filtro vía
+  `matching.weights.*`.
 - **IA**: `service/OllamaService` (cliente a prueba de fallos — nunca rompe el matching) +
   `service/MatchExplanationService` (genera la explicación on-demand, la cachea en el `MatchModel` y cae
   al respaldo determinístico si el LLM no responde).
-- Ver [CLAUDE.md](CLAUDE.md) para el detalle de modelos, controladores y servicios.
+
+## Autor
+
+**Marco Rodolfo Cortez** — Proyecto de Grado.
