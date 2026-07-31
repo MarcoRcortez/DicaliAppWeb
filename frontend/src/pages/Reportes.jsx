@@ -36,6 +36,13 @@ const Reportes = () => {
   const r = data?.resumen || {};
   const porVacante = data?.porVacante || [];
   const sinResponder = data?.sinResponderLista || [];
+  const postulantes = data?.postulantes || [];
+
+  const ESTADO_BADGE = {
+    MATCHED: { label: "Conectado", cls: "bg-green-100 text-green-700" },
+    REJECTED: { label: "Rechazado", cls: "bg-red-100 text-red-600" },
+    PENDING: { label: "Sin responder", cls: "bg-amber-100 text-amber-700" },
+  };
 
   const estados = [
     { name: "Conectados", value: r.conectados || 0, color: "#22c55e" },
@@ -125,6 +132,41 @@ const Reportes = () => {
                   <Bar dataKey="Conectados" fill="#22c55e" isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Tabla general de postulantes */}
+        {postulantes.length > 0 && (
+          <div className="bg-white rounded-2xl shadow p-6 overflow-x-auto mb-8">
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Postulantes ({postulantes.length})</h3>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                <tr>
+                  <th className="p-3 text-left">Candidato</th>
+                  <th className="p-3 text-left">Vacante</th>
+                  <th className="p-3 text-center">Compatibilidad</th>
+                  <th className="p-3 text-center">Estado</th>
+                  <th className="p-3 text-center">Fecha de postulación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {postulantes.map((p, i) => {
+                  const badge = ESTADO_BADGE[p.status] || ESTADO_BADGE.PENDING;
+                  return (
+                    <tr key={i} className="border-t border-gray-100">
+                      <td className="p-3 font-medium text-gray-800">{titleCase(candidatos[p.candidateId] || "Candidato")}</td>
+                      <td className="p-3 text-gray-600">{titleCase(p.jobTitle)}</td>
+                      <td className="p-3 text-center font-bold text-blue-600">{Math.round(p.score)}%</td>
+                      <td className="p-3 text-center"><span className={`px-2.5 py-1 rounded-full text-xs font-bold ${badge.cls}`}>{badge.label}</span></td>
+                      <td className="p-3 text-center text-gray-500 text-xs">{p.appliedAt ? p.appliedAt.slice(0, 10) : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="mt-4">
+              <Link to="/company/postulantes" className="text-sm text-blue-600 font-bold hover:underline">Ver detalle y responder en Postulantes →</Link>
             </div>
           </div>
         )}

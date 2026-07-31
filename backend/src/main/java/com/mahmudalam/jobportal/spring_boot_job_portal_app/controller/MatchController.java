@@ -316,6 +316,7 @@ public class MatchController {
         double sumaCompat = 0;
         int contCompat = 0;
         List<Map<String, Object>> sinResponderLista = new java.util.ArrayList<>();
+        List<Map<String, Object>> postulantes = new java.util.ArrayList<>();
         LocalDateTime inicioMes = LocalDateTime.now().withDayOfMonth(1).toLocalDate().atStartOfDay();
 
         for (VacancyModel v : myVacancies) {
@@ -332,6 +333,14 @@ public class MatchController {
                     postulados++;
                     sumaV += m.getScore();
                     contV++;
+                    postulantes.add(Map.of(
+                            "candidateId", m.getCandidateId() != null ? m.getCandidateId() : "",
+                            "vacancyId", v.getId(),
+                            "jobTitle", v.getJobTitle() != null ? v.getJobTitle() : "",
+                            "score", m.getScore(),
+                            "status", m.getStatus() != null ? m.getStatus() : "PENDING",
+                            "appliedAt", m.getAppliedAt() != null ? m.getAppliedAt().toString() : ""
+                    ));
                     if ("PENDING".equals(m.getStatus())) {
                         sinResponder++;
                         sinResponderLista.add(Map.of(
@@ -372,10 +381,15 @@ public class MatchController {
         resumen.put("postulacionesDelMes", totMes);
         resumen.put("compatibilidadPromedio", contCompat > 0 ? (int) Math.round(sumaCompat / contCompat) : 0);
 
+        // Ordenar los postulantes por compatibilidad descendente (los más afines primero)
+        postulantes.sort((a, b) -> Double.compare(
+                ((Number) b.get("score")).doubleValue(), ((Number) a.get("score")).doubleValue()));
+
         return ResponseEntity.ok(Map.of(
                 "resumen", resumen,
                 "porVacante", porVacante,
-                "sinResponderLista", sinResponderLista
+                "sinResponderLista", sinResponderLista,
+                "postulantes", postulantes
         ));
     }
 
