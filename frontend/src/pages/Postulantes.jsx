@@ -15,6 +15,7 @@ import {
   getMatchExplanation,
 } from "../api/api";
 import { titleCase } from "../utils/format";
+import { exportCvToPdf } from "../utils/cvPdf";
 
 const Postulantes = () => {
   const { userId } = useAuthStore();
@@ -242,6 +243,9 @@ const Postulantes = () => {
       return (getScoreForCandidate(b.id)?.score || 0) - (getScoreForCandidate(a.id)?.score || 0);
     });
 
+  // Cuántos candidatos se postularon activamente (en la vista actual)
+  const numInteresados = candidates.filter((c) => sePostulo(c.id)).length;
+
   const limpiarFiltros = () => {
     setSearch(""); setFilter("Todos"); setLangFilter("Todos"); setWorkTypeFilter("Todos");
     setMinYears(0); setMaxSalary(""); setMinScore(0); setSortBy("score");
@@ -365,7 +369,12 @@ const Postulantes = () => {
                 </div>
               </div>
 
-              <button onClick={() => setViewCandidate(null)} className="w-full bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-gray-900 transition-all">Cerrar</button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button onClick={() => exportCvToPdf(viewCandidate, { download: true })} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+                  <span>⬇</span> Descargar CV (PDF)
+                </button>
+                <button onClick={() => setViewCandidate(null)} className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-gray-900 transition-all">Cerrar</button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -552,10 +561,21 @@ const Postulantes = () => {
             </div>
           )}
 
-          <p className="text-xs text-gray-400 mt-3">
-            {filtered.length} {filtered.length === 1 ? "postulante" : "postulantes"}
-            {vacancyView !== "Todas" && ` para "${vacancies.find((v) => v.id === vacancyView)?.jobTitle || ""}"`}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+            <p className="text-xs text-gray-400">
+              {filtered.length} {filtered.length === 1 ? "postulante" : "postulantes"}
+              {vacancyView !== "Todas" && ` para "${vacancies.find((v) => v.id === vacancyView)?.jobTitle || ""}"`}
+            </p>
+            {numInteresados > 0 && (
+              <button
+                onClick={() => setSoloPostulados((v) => !v)}
+                title="Los que se postularon activamente a tus vacantes"
+                className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${soloPostulados ? "bg-blue-600 text-white border-blue-600" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"}`}
+              >
+                {soloPostulados ? "✓ Mostrando solo interesados" : `✋ Ver solo interesados (${numInteresados})`}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* CANDIDATOS */}
@@ -565,9 +585,15 @@ const Postulantes = () => {
             const score = matchData ? Math.round(matchData.score) : null;
             const scoreColor = score >= 80 ? "bg-green-100 text-green-700 border-green-300" : score >= 50 ? "bg-yellow-100 text-yellow-700 border-yellow-300" : score !== null ? "bg-red-50 text-red-600 border-red-200" : "";
             const cardBorder = score >= 80 ? "border-green-300" : score >= 50 ? "border-yellow-200" : "border-gray-100";
+            const applied = sePostulo(c.id);
 
             return (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`bg-white rounded-2xl shadow-lg p-6 border-2 ${cardBorder}`}>
+              <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`bg-white rounded-2xl shadow-lg p-6 border-2 ${applied ? "border-blue-500 ring-2 ring-blue-200" : cardBorder}`}>
+                {applied && (
+                  <div className="mb-4 -mt-1 bg-blue-600 text-white text-[11px] font-black px-3 py-1.5 rounded-lg flex items-center gap-1.5 uppercase tracking-wide">
+                    <span>✋</span> Se postuló a este puesto
+                  </div>
+                )}
                 {/* BARRA DE SCORE */}
                 {score !== null && (
                   <div className="mb-4">

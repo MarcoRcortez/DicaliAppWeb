@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import useAuthStore from "../store/authStore";
 import { getCandidateProfile, saveCandidateProfile, deleteCandidateProfile } from "../api/api";
 import ImageCropper from "../components/ImageCropper";
-import jsPDF from "jspdf";
+import { calcAge, exportCvToPdf } from "../utils/cvPdf";
 
 const SOFT_SKILLS_OPTIONS = [
   "Trabajo en equipo", "Liderazgo", "Comunicación", "Resolución de problemas",
@@ -15,15 +15,6 @@ const LANGUAGE_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2", "Nativo"];
 
 const today = new Date().toISOString().split("T")[0];
 
-const calcAge = (dateStr) => {
-  if (!dateStr) return null;
-  const birth = new Date(dateStr);
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const m = now.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-  return age;
-};
 
 const emptyForm = {
   fullName: "", email: "", phone: "", location: "La Paz", birthDate: "",
@@ -218,89 +209,7 @@ const MiCurriculum = () => {
     } catch { alert("Error al eliminar."); }
   };
 
-  const handleExportPdf = () => {
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pageW = pdf.internal.pageSize.getWidth();
-    const margin = 15;
-    let y = 20;
-
-    const addLine = (size, bold, text, color = [30, 58, 95]) => {
-      if (y > 270) { pdf.addPage(); y = 20; }
-      pdf.setFontSize(size);
-      pdf.setFont("helvetica", bold ? "bold" : "normal");
-      pdf.setTextColor(...color);
-      const lines = pdf.splitTextToSize(text, pageW - margin * 2);
-      pdf.text(lines, margin, y);
-      y += lines.length * (size * 0.45) + 2;
-    };
-
-    const addSection = (title) => {
-      y += 4;
-      addLine(12, true, title);
-      pdf.setDrawColor(59, 130, 246);
-      pdf.line(margin, y - 1, pageW - margin, y - 1);
-      y += 3;
-    };
-
-    // Cabecera
-    addLine(22, true, form.fullName || "Sin nombre");
-    addLine(10, false, [form.email, form.phone, form.location].filter(Boolean).join("  |  "), [100, 100, 100]);
-    if (form.birthDate) {
-      const age = calcAge(form.birthDate);
-      addLine(10, false, `Fecha de nacimiento: ${form.birthDate} (${age} años)`, [100, 100, 100]);
-    }
-
-    // Experiencia
-    if (form.workExperience?.length > 0) {
-      addSection("EXPERIENCIA LABORAL");
-      form.workExperience.forEach((w) => {
-        addLine(11, true, `${w.title}  -  ${w.company}`);
-        addLine(9, false, `${w.startDate || ""} a ${w.current ? "Actual" : w.endDate || ""}`, [120, 120, 120]);
-      });
-    }
-
-    // Educación
-    if (form.educations?.length > 0) {
-      addSection("EDUCACIÓN");
-      form.educations.forEach((e) => addLine(10, false, `${e.degree}  -  ${e.institution} (${e.year})`));
-    }
-
-    // Certificaciones
-    if (form.certifications?.length > 0) {
-      addSection("CERTIFICACIONES");
-      form.certifications.forEach((c) => addLine(10, false, `${c.name}  -  ${c.institution}${c.year ? ` (${c.year})` : ""}`));
-    }
-
-    // Habilidades técnicas
-    if (form.technicalSkills?.length > 0) {
-      addSection("HABILIDADES TÉCNICAS");
-      addLine(10, false, form.technicalSkills.map((s) => `${s.name} (${s.level})`).join("  /  "));
-    }
-
-    // Habilidades blandas
-    if (form.softSkills?.length > 0) {
-      addSection("HABILIDADES BLANDAS");
-      addLine(10, false, form.softSkills.join("  /  "));
-    }
-
-    // Idiomas
-    if (form.languages?.length > 0) {
-      addSection("IDIOMAS");
-      addLine(10, false, form.languages.map((l) => `${l.name} (${l.level})`).join("  /  "));
-    }
-
-    // Salario y disponibilidad
-    addSection("INFORMACIÓN ADICIONAL");
-    if (form.expectedSalary?.max) {
-      addLine(10, false, `Expectativa salarial: Bs. ${form.expectedSalary.max}${form.expectedSalary.max === 3350 ? " (Salario minimo nacional)" : ""}`);
-    }
-    addLine(10, false, `Disponibilidad: ${form.workSchedule || "-"}  |  Tipo: ${form.workType || "-"}`);
-
-    // Abrir previsualización en ventana nueva
-    const pdfBlob = pdf.output("blob");
-    const url = URL.createObjectURL(pdfBlob);
-    window.open(url, "_blank");
-  };
+  const handleExportPdf = () => exportCvToPdf(form);
 
   // Calcular límites de fecha de nacimiento (18 a 54 años)
   const maxBirthDate = new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0];
