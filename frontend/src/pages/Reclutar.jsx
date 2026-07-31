@@ -207,7 +207,7 @@ const Reclutar = () => {
           <span></span>
         </div>
 
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* ── FORMULARIO (IZQUIERDA) ── */}
           <div className="flex-1 min-w-0">
             {editingId && (
@@ -250,7 +250,7 @@ const Reclutar = () => {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Ej: Java, Excel" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Ej: Java, Excel" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <select value={newSkillLevel} onChange={(e) => setNewSkillLevel(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {SKILL_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
                   </select>
@@ -268,7 +268,7 @@ const Reclutar = () => {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input value={newSoftSkill} onChange={(e) => setNewSoftSkill(e.target.value)} placeholder="Ej: Trabajo en equipo" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input value={newSoftSkill} onChange={(e) => setNewSoftSkill(e.target.value)} placeholder="Ej: Trabajo en equipo" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <button onClick={addSoftSkill} className="bg-green-50 text-green-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-green-100">+</button>
                 </div>
               </div>
@@ -283,7 +283,7 @@ const Reclutar = () => {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input value={newLang} onChange={(e) => setNewLang(e.target.value)} placeholder="Ej: Inglés" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input value={newLang} onChange={(e) => setNewLang(e.target.value)} placeholder="Ej: Inglés" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <select value={newLangLevel} onChange={(e) => setNewLangLevel(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {LANGUAGE_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
                   </select>
@@ -301,12 +301,12 @@ const Reclutar = () => {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input value={newCert} onChange={(e) => setNewCert(e.target.value)} placeholder="Ej: Scrum Fundamentals" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input value={newCert} onChange={(e) => setNewCert(e.target.value)} placeholder="Ej: Scrum Fundamentals" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <button onClick={addCertification} className="bg-orange-50 text-orange-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-orange-100">+</button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Nivel de experiencia</label>
                   <select value={form.experienceLevel} onChange={(e) => handleChange("experienceLevel", e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -335,7 +335,7 @@ const Reclutar = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Fecha de cierre</label>
                   <input type="date" value={form.closingDate} onChange={(e) => handleChange("closingDate", e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -367,7 +367,7 @@ const Reclutar = () => {
           </div>
 
           {/* ── TARJETAS CREADAS (DERECHA) ── */}
-          <div className="w-80 flex-shrink-0">
+          <div className="w-full lg:w-80 flex-shrink-0">
             <h2 className="text-lg font-black text-blue-950 mb-4">Vacantes Creadas ({myVacancies.length})</h2>
             <div className="space-y-4 max-h-[calc(100vh-160px)] overflow-y-auto pr-1">
               {myVacancies.length === 0 && (

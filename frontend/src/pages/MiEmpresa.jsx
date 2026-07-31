@@ -51,11 +51,16 @@ const MiEmpresa = () => {
 
   const loadProfile = async () => {
     try {
-      const res = await getCompanyProfile(userId);
-      // Heredar el email de la cuenta si el perfil aún no tiene uno
-      setForm({ ...res.data, email: res.data.email || cuentaEmail || "" });
-      if (res.data.latitude && res.data.longitude) {
-        setPosition([res.data.latitude, res.data.longitude]);
+      const d = await getCompanyProfile(userId).then((r) => r.data);
+      // Coerción de nulos (campos que pueden faltar en la BD) + heredar el email de la cuenta
+      setForm((p) => ({
+        ...p, ...d,
+        companyName: d.companyName || "", description: d.description || "",
+        phone1: d.phone1 || "", phone2: d.phone2 || "", address: d.address || "",
+        logoBase64: d.logoBase64 || "", email: d.email || cuentaEmail || "",
+      }));
+      if (d.latitude && d.longitude) {
+        setPosition([d.latitude, d.longitude]);
       }
     } catch {
       // Primer ingreso: dejar el email de la cuenta prellenado
@@ -131,7 +136,7 @@ const MiEmpresa = () => {
     } catch { alert("Error al eliminar."); }
   };
 
-  const wordCount = form.description.split(/\s+/).filter(Boolean).length;
+  const wordCount = (form.description || "").split(/\s+/).filter(Boolean).length;
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>;
@@ -206,9 +211,9 @@ const MiEmpresa = () => {
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Dirección</label>
-            <div className="flex gap-2">
-              <input value={form.address} onChange={(e) => handleChange("address", e.target.value)} className="flex-1 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Dirección de la empresa" />
-              <button onClick={geocodeAddress} disabled={geoLoading} className="bg-blue-600 text-white px-4 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-50 whitespace-nowrap">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input value={form.address} onChange={(e) => handleChange("address", e.target.value)} className="min-w-0 flex-1 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Dirección de la empresa" />
+              <button onClick={geocodeAddress} disabled={geoLoading} className="flex-shrink-0 bg-blue-600 text-white px-4 py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-50 whitespace-nowrap">
                 {geoLoading ? "..." : "Ubicar en el mapa"}
               </button>
             </div>

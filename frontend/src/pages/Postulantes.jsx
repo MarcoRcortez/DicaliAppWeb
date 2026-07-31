@@ -350,7 +350,7 @@ const Postulantes = () => {
               )}
 
               {/* Salario y Disponibilidad */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-xs text-gray-400 font-bold">Expectativa Salarial</p>
                   <p className="text-sm font-bold text-gray-700">Bs. {viewCandidate.expectedSalary?.min || 0} - {viewCandidate.expectedSalary?.max || 0}</p>
@@ -471,7 +471,7 @@ const Postulantes = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nombre, habilidad, institución o ubicación..."
-              className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-w-0 flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <select
               aria-label="Ver candidatos por vacante"

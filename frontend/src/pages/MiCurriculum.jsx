@@ -360,7 +360,7 @@ const MiCurriculum = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <select value={form.location} onChange={(e) => handleChange("location", e.target.value)} className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select value={form.location || "La Paz"} onChange={(e) => handleChange("location", e.target.value)} className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="La Paz">La Paz</option>
                   <option value="El Alto">El Alto</option>
                 </select>
@@ -396,9 +396,9 @@ const MiCurriculum = () => {
                 </table>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3 mb-2">
-              <input value={newExp.title} onChange={(e) => setNewExp((p) => ({ ...p, title: e.target.value }))} placeholder="Cargo" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <input value={newExp.company} onChange={(e) => setNewExp((p) => ({ ...p, company: e.target.value }))} placeholder="Empresa" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+              <input value={newExp.title} onChange={(e) => setNewExp((p) => ({ ...p, title: e.target.value }))} placeholder="Cargo" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={newExp.company} onChange={(e) => setNewExp((p) => ({ ...p, company: e.target.value }))} placeholder="Empresa" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Fecha inicio</label>
                 <input value={newExp.startDate} onChange={(e) => setNewExp((p) => ({ ...p, startDate: e.target.value }))} type="date" max={today} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -425,11 +425,11 @@ const MiCurriculum = () => {
                 <button onClick={() => removeEducation(i)} className="text-red-400 hover:text-red-600 text-xs">Eliminar</button>
               </div>
             ))}
-            <div className="grid grid-cols-3 gap-3">
-              <input value={newEdu.degree} onChange={(e) => setNewEdu((p) => ({ ...p, degree: e.target.value }))} placeholder="Título" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <input value={newEdu.institution} onChange={(e) => setNewEdu((p) => ({ ...p, institution: e.target.value }))} placeholder="Institución" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input value={newEdu.degree} onChange={(e) => setNewEdu((p) => ({ ...p, degree: e.target.value }))} placeholder="Título" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={newEdu.institution} onChange={(e) => setNewEdu((p) => ({ ...p, institution: e.target.value }))} placeholder="Institución" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <div className="flex gap-2">
-                <input value={newEdu.year} onChange={(e) => setNewEdu((p) => ({ ...p, year: e.target.value }))} type="number" min="1970" max={new Date().getFullYear()} placeholder="Año" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input value={newEdu.year} onChange={(e) => setNewEdu((p) => ({ ...p, year: e.target.value }))} type="number" min="1970" max={new Date().getFullYear()} placeholder="Año" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <button onClick={addEducation} className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded-lg font-bold hover:bg-blue-100 whitespace-nowrap">+ Agregar</button>
               </div>
             </div>
@@ -444,11 +444,11 @@ const MiCurriculum = () => {
                 <button onClick={() => removeCertification(i)} className="text-red-400 hover:text-red-600 text-xs">Eliminar</button>
               </div>
             ))}
-            <div className="grid grid-cols-3 gap-3">
-              <input value={newCert.name} onChange={(e) => setNewCert((p) => ({ ...p, name: e.target.value }))} placeholder="Certificación" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <input value={newCert.institution} onChange={(e) => setNewCert((p) => ({ ...p, institution: e.target.value }))} placeholder="Institución" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input value={newCert.name} onChange={(e) => setNewCert((p) => ({ ...p, name: e.target.value }))} placeholder="Certificación" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={newCert.institution} onChange={(e) => setNewCert((p) => ({ ...p, institution: e.target.value }))} placeholder="Institución" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <div className="flex gap-2">
-                <input value={newCert.year} onChange={(e) => setNewCert((p) => ({ ...p, year: e.target.value }))} type="number" min="1970" max={new Date().getFullYear()} placeholder="Año (opcional)" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input value={newCert.year} onChange={(e) => setNewCert((p) => ({ ...p, year: e.target.value }))} type="number" min="1970" max={new Date().getFullYear()} placeholder="Año (opcional)" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <button onClick={addCertification} className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded-lg font-bold hover:bg-blue-100 whitespace-nowrap">+ Agregar</button>
               </div>
             </div>
@@ -466,11 +466,11 @@ const MiCurriculum = () => {
               ))}
             </div>
             <div className="flex gap-2">
-              <input value={newSkillName} onChange={(e) => setNewSkillName(e.target.value)} placeholder="Ej: React, Excel, Python" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <select value={newSkillLevel} onChange={(e) => setNewSkillLevel(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <input value={newSkillName} onChange={(e) => setNewSkillName(e.target.value)} placeholder="Ej: React, Excel, Python" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <select value={newSkillLevel} onChange={(e) => setNewSkillLevel(e.target.value)} className="flex-shrink-0 border border-gray-200 rounded-xl px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {SKILL_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
               </select>
-              <button onClick={addSkill} className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-100">+</button>
+              <button onClick={addSkill} className="flex-shrink-0 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-100">+</button>
             </div>
           </section>
 
@@ -497,11 +497,11 @@ const MiCurriculum = () => {
               ))}
             </div>
             <div className="flex gap-2">
-              <input value={newLangName} onChange={(e) => setNewLangName(e.target.value)} placeholder="Ej: Inglés" className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <select value={newLangLevel} onChange={(e) => setNewLangLevel(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <input value={newLangName} onChange={(e) => setNewLangName(e.target.value)} placeholder="Ej: Inglés" className="min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <select value={newLangLevel} onChange={(e) => setNewLangLevel(e.target.value)} className="flex-shrink-0 border border-gray-200 rounded-xl px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {LANGUAGE_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
               </select>
-              <button onClick={addLanguage} className="bg-purple-50 text-purple-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-purple-100">+</button>
+              <button onClick={addLanguage} className="flex-shrink-0 bg-purple-50 text-purple-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-purple-100">+</button>
             </div>
           </section>
 
@@ -519,7 +519,7 @@ const MiCurriculum = () => {
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Disponibilidad</label>
-              <select value={form.workSchedule} onChange={(e) => handleChange("workSchedule", e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select value={form.workSchedule || "tiempo completo"} onChange={(e) => handleChange("workSchedule", e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="tiempo completo">Tiempo completo</option>
                 <option value="tiempo parcial">Tiempo parcial</option>
                 <option value="medio tiempo">Medio tiempo</option>
@@ -527,7 +527,7 @@ const MiCurriculum = () => {
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Tipo de trabajo</label>
-              <select value={form.workType} onChange={(e) => handleChange("workType", e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select value={form.workType || "presencial La Paz"} onChange={(e) => handleChange("workType", e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="presencial La Paz">Presencial La Paz</option>
                 <option value="remoto">Remoto</option>
               </select>
