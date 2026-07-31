@@ -16,20 +16,26 @@ import org.springframework.stereotype.Component;
 @Data
 @Slf4j
 public class MatchingWeightsProperties {
-    /** Afinidad con el rubro/trayectoria profesional (cargo, educación, certificaciones) */
-    private double affinity = 0.30;
-    private double technical = 0.30;
-    private double soft = 0.15;
-    private double experience = 0.10;
-    private double salary = 0.05;
-    private double workType = 0.05;
-    private double language = 0.05;
+    // Pesos de los criterios de AJUSTE (deben sumar 1.0). La experiencia pesa más que las técnicas.
+    private double experience = 0.30;
+    private double technical = 0.25;
+    private double soft = 0.20;
+    private double salary = 0.10;
+    private double workType = 0.075;
+    private double language = 0.075;
+
+    /**
+     * Piso del filtro de afinidad vocacional (estudios + experiencia). La afinidad NO es un peso más:
+     * multiplica el resultado. Con afinidad 0 el score se multiplica por este piso (filtro fuerte);
+     * con afinidad 1 se multiplica por 1.0.
+     */
+    private double affinityFloor = 0.10;
 
     @PostConstruct
     public void validateSum() {
-        double sum = affinity + technical + soft + experience + salary + workType + language;
+        double sum = experience + technical + soft + salary + workType + language;
         if (Math.abs(sum - 1.0) > 0.005) {
-            log.warn("matching.weights.* no suman 1.0 (suman {}). Los scores pueden exceder o no alcanzar el 100%.", sum);
+            log.warn("matching.weights.* (criterios de ajuste) no suman 1.0 (suman {}). Los scores pueden exceder o no alcanzar el 100%.", sum);
         }
     }
 }

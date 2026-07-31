@@ -22,9 +22,10 @@ class MatchingEngineTest {
 
     private MatchingEngine engine;
 
-    /** Pesos por defecto: afinidad .30, técnicas .30, blandas .15, experiencia .10, salario .05, tipo .05, idiomas .05.
-     *  El total se renormaliza sobre los criterios que APLICAN (la vacante base no tiene jobTitle/área,
-     *  así que la afinidad no aplica y el denominador es 0.70). */
+    /** Pesos de ajuste por defecto: experiencia .30, técnicas .25, blandas .20, salario .10, tipo .075,
+     *  idiomas .075 (suman 1.0). La afinidad vocacional (estudios+experiencia) NO es un peso: multiplica
+     *  el resultado (piso 0.10). La vacante base no tiene jobTitle → la afinidad no aplica (factor 1.0)
+     *  y el promedio de ajuste se renormaliza sobre los criterios presentes. */
     @BeforeEach
     void setUp() {
         engine = new MatchingEngine(mock(MatchRepository.class), new MatchingWeightsProperties());
@@ -123,9 +124,9 @@ class MatchingEngineTest {
         CandidateProfileModel c = candidate();
         c.setLanguages(List.of(candidateLang("Frances", "C1"))); // no tiene el idioma pedido
 
-        // Criterios que aplican suman 0.70 (afinidad no aplica: la vacante base no tiene título).
-        // Se pierde el peso de idiomas: (0.70 - 0.05) / 0.70 = 0.92857 → 92.86%
-        assertEquals(92.857, engine.calculateScore(c, vacancy()), 0.05);
+        // Los criterios de ajuste presentes suman 1.0. Se pierde el peso de idiomas (0.075):
+        // (1.0 - 0.075) / 1.0 = 0.925 → 92.5% (afinidad no aplica → factor 1.0)
+        assertEquals(92.5, engine.calculateScore(c, vacancy()), 0.05);
     }
 
     @Test
@@ -175,8 +176,8 @@ class MatchingEngineTest {
 
         MatchBreakdown b = engine.calculateBreakdown(c, v);
         assertEquals(0.5, b.experienceScore(), 0.01);
-        // Pierde la mitad del peso de experiencia (0.05) sobre el denominador 0.70 → (0.70-0.05)/0.70
-        assertEquals(92.857, b.totalScore(), 0.05);
+        // Pierde la mitad del peso de experiencia (0.30/2 = 0.15) sobre el denominador 1.0 → 0.85
+        assertEquals(85.0, b.totalScore(), 0.1);
     }
 
     @Test
@@ -282,8 +283,7 @@ class MatchingEngineTest {
     @Test
     void losPesosConfiguradosCambianElScore() {
         MatchingWeightsProperties w = new MatchingWeightsProperties();
-        w.setAffinity(0.0);
-        w.setTechnical(1.0); // todo el peso en técnicas
+        w.setTechnical(1.0); // todo el peso de ajuste en técnicas
         w.setSoft(0.0);
         w.setExperience(0.0);
         w.setSalary(0.0);
@@ -378,5 +378,26 @@ class MatchingEngineTest {
         // La vacante base no tiene jobTitle → la afinidad no aplica y no penaliza.
         MatchBreakdown b = engine.calculateBreakdown(candidate(), vacancy());
         assertEquals(100.0, b.totalScore(), 0.01);
+    }
+
+    @Test
+    void cocineroNuncaSeraDisenadorNiSecretaria() {
+        CandidateProfileModel cocinero = new CandidateProfileModel();
+        cocinero.setWorkExperience(List.of(expWithTitle("Cocinero", "2019-01-01", "2024-01-01")));
+        cocinero.setEducations(List.of(education("Gastronomía", "Instituto Culinario")));
+        cocinero.setTechnicalSkills(List.of(skill("Cocina Internacional", "AVANZADO")));
+        cocinero.setExpectedSalary(salary(0, 3000));
+        cocinero.setWorkType("presencial La Paz");
+
+        double enDiseno = engine.calculateScore(cocinero, vacantePuesto("Diseñador Gráfico", "Diseño", 1000, 2000));
+        double enSecretaria = engine.calculateScore(cocinero, vacantePuesto("Secretaria", "Administración", 1500, 3000));
+        double enCocina = engine.calculateScore(cocinero, vacantePuesto("Cocinero", "Cocina", 1500, 3000));
+
+        // Un cocinero en un rubro ajeno queda muy bajo (filtro fuerte)...
+        assertTrue(enDiseno < 20.0, "cocinero en diseño debe ser muy bajo → " + enDiseno);
+        assertTrue(enSecretaria < 20.0, "cocinero en secretaria debe ser muy bajo → " + enSecretaria);
+        // ...pero en su propio rubro sube claramente.
+        assertTrue(enCocina > 45.0 && enCocina > enDiseno,
+                "cocinero en cocina debe ser alto y superar a diseño → cocina=" + enCocina + " diseño=" + enDiseno);
     }
 }

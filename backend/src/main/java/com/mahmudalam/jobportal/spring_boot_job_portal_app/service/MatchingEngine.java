@@ -96,13 +96,10 @@ public class MatchingEngine {
         double salaryScore = matchSalary(candidate, vacancy);
         double workTypeScore = matchWorkType(candidate, vacancy);
 
-        // Renormalización: solo cuentan los criterios que APLICAN (la vacante especifica el requisito).
-        // Un criterio ausente NO regala puntaje: se excluye del promedio ponderado.
+        // Renormalización: solo cuentan los criterios de AJUSTE que aplican (la vacante especifica el
+        // requisito). Un criterio ausente NO regala puntaje: se excluye del promedio ponderado.
         double weightedSum = 0, appliedWeight = 0;
 
-        if (!roleKeywords(vacancy).isEmpty()) {
-            weightedSum += affinity.score() * weights.getAffinity();   appliedWeight += weights.getAffinity();
-        }
         if (notEmpty(vacancy.getRequiredTechnicalSkills())) {
             weightedSum += technical.score() * weights.getTechnical(); appliedWeight += weights.getTechnical();
         }
@@ -121,7 +118,18 @@ public class MatchingEngine {
             weightedSum += workTypeScore * weights.getWorkType();      appliedWeight += weights.getWorkType();
         }
 
-        double total = appliedWeight > 0 ? Math.min(100.0, (weightedSum / appliedWeight) * 100) : 0.0;
+        double fitScore = appliedWeight > 0 ? weightedSum / appliedWeight : 0.0;
+
+        // Filtro fuerte de afinidad vocacional: la afinidad (estudios+experiencia) multiplica el ajuste.
+        // Si no se puede juzgar la vocación (la vacante no tiene rol, o el candidato no tiene trayectoria)
+        // no se penaliza. Si no, factor = piso + (1 - piso) * afinidad → sin afinidad, cae al piso.
+        double relevanceFactor = 1.0;
+        if (!roleKeywords(vacancy).isEmpty() && !candidateKeywords(candidate).isEmpty()) {
+            double floor = weights.getAffinityFloor();
+            relevanceFactor = floor + (1.0 - floor) * affinity.score();
+        }
+
+        double total = Math.min(100.0, fitScore * relevanceFactor * 100);
 
         return new MatchBreakdown(
                 total,
@@ -166,7 +174,11 @@ public class MatchingEngine {
         return tokens(v.getJobTitle(), v.getDepartment());
     }
 
-    /** Palabras de la trayectoria del candidato: cargos, educación, certificaciones, habilidades. */
+    /**
+     * Palabras de la TRAYECTORIA (vocación) del candidato: cargos de experiencia, educación y
+     * certificaciones. NO incluye habilidades técnicas/blandas: la vocación la definen estudios y
+     * experiencia (las habilidades ya tienen su propio criterio).
+     */
     private Set<String> candidateKeywords(CandidateProfileModel c) {
         Set<String> set = new HashSet<>();
         if (c.getWorkExperience() != null)
@@ -175,10 +187,6 @@ public class MatchingEngine {
             for (CandidateProfileModel.EducationEntry e : c.getEducations()) set.addAll(tokens(e.getDegree()));
         if (c.getCertifications() != null)
             for (CandidateProfileModel.CertificationEntry ce : c.getCertifications()) set.addAll(tokens(ce.getName()));
-        if (c.getTechnicalSkills() != null)
-            for (CandidateProfileModel.SkillTag s : c.getTechnicalSkills()) set.addAll(tokens(s.getName()));
-        if (c.getSoftSkills() != null)
-            for (String ss : c.getSoftSkills()) set.addAll(tokens(ss));
         return set;
     }
 
