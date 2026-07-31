@@ -96,6 +96,7 @@ public class MatchingEngine {
         double experienceScore = matchExperience(candidateYears, vacancy);
         double salaryScore = matchSalary(candidate, vacancy);
         double workTypeScore = matchWorkType(candidate, vacancy);
+        double locationScore = matchLocation(candidate, vacancy);
 
         // Renormalización: solo cuentan los criterios de AJUSTE que aplican (la vacante especifica el
         // requisito). Un criterio ausente NO regala puntaje: se excluye del promedio ponderado.
@@ -117,6 +118,10 @@ public class MatchingEngine {
         }
         if (candidate.getWorkSchedule() != null && vacancy.getWorkAvailability() != null) {
             weightedSum += workTypeScore * weights.getWorkType();      appliedWeight += weights.getWorkType();
+        }
+        // Ubicación: solo aplica si la vacante especifica una (blank = remota/sin restricción → neutral).
+        if (hasText(vacancy.getLocation()) && hasText(candidate.getLocation())) {
+            weightedSum += locationScore * weights.getLocation();      appliedWeight += weights.getLocation();
         }
 
         double fitScore = appliedWeight > 0 ? weightedSum / appliedWeight : 0.0;
@@ -140,12 +145,17 @@ public class MatchingEngine {
                 experienceScore, candidateYears, vacancy.getMinExperienceYears(),
                 salaryScore,
                 workTypeScore,
+                locationScore,
                 language.score(), language.matched(), language.missing()
         );
     }
 
     private static boolean notEmpty(List<?> list) {
         return list != null && !list.isEmpty();
+    }
+
+    private static boolean hasText(String s) {
+        return s != null && !s.isBlank();
     }
 
     // ---- Afinidad vocacional (rubro de la vacante vs. trayectoria del candidato) ----
@@ -390,6 +400,40 @@ public class MatchingEngine {
         if (x.contains("completo")) return "completo";
         if (x.contains("parcial") || x.contains("medio")) return "parcial";
         return x;
+    }
+
+    // ---- Ubicación (contexto laboral paceño) ----
+
+    /**
+     * Compatibilidad de ubicación entre el candidato y el puesto. Modela la novedad del
+     * sistema: la <b>adaptación al contexto laboral paceño</b> (área metropolitana La Paz–El Alto).
+     * <ul>
+     *   <li>Misma ciudad → 1.0.</li>
+     *   <li>La Paz ↔ El Alto (conurbación, área metropolitana) → 0.5 (crédito parcial por cercanía).</li>
+     *   <li>Ciudades distintas y no conurbadas → 0.0.</li>
+     * </ul>
+     * <b>Limitación:</b> la granularidad es de <i>ciudad</i>, no de zona/macrodistrito, porque es lo
+     * que capturan los formularios (hoy solo "La Paz" y "El Alto"). La aplicabilidad del criterio la
+     * decide {@code calculateBreakdown}: si la vacante no fija ubicación (remota/sin restricción) el
+     * criterio no aplica y no penaliza.
+     */
+    private double matchLocation(CandidateProfileModel c, VacancyModel v) {
+        if (!hasText(c.getLocation()) || !hasText(v.getLocation())) return 1.0; // guarda; la aplicabilidad se decide afuera
+        String cCity = normalizeCity(c.getLocation());
+        String vCity = normalizeCity(v.getLocation());
+        if (cCity.equals(vCity)) return 1.0;
+        if (esAreaMetropolitanaLaPaz(cCity, vCity)) return 0.5;
+        return 0.0;
+    }
+
+    private String normalizeCity(String s) {
+        return stripAccents(s.toLowerCase()).trim();
+    }
+
+    /** La Paz y El Alto forman una sola área metropolitana (conmutación diaria habitual). */
+    private boolean esAreaMetropolitanaLaPaz(String a, String b) {
+        Set<String> metro = Set.of("la paz", "el alto");
+        return metro.contains(a) && metro.contains(b);
     }
 
     // ---- Helpers de nivel ----

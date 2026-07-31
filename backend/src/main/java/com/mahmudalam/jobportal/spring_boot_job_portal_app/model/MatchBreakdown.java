@@ -14,5 +14,6 @@ public record MatchBreakdown(
         double experienceScore, double candidateYearsExperience, Integer minYearsRequired,
         double salaryScore,
         double workTypeScore,
+        double locationScore,
         double languageScore, List<String> matchedLanguages, List<String> missingLanguages
 ) {}

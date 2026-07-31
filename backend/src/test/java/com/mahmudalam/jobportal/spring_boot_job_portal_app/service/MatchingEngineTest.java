@@ -125,9 +125,10 @@ class MatchingEngineTest {
         CandidateProfileModel c = candidate();
         c.setLanguages(List.of(candidateLang("Frances", "C1"))); // no tiene el idioma pedido
 
-        // Los criterios de ajuste presentes suman 1.0. Se pierde el peso de idiomas (0.075):
-        // (1.0 - 0.075) / 1.0 = 0.925 → 92.5% (afinidad no aplica → factor 1.0)
-        assertEquals(92.5, engine.calculateScore(c, vacancy()), 0.05);
+        // Criterios de ajuste presentes (la vacante base no fija ubicación → esa no aplica):
+        // técnicas .22 + blandas .15 + experiencia .25 + salario .08 + disponibilidad .075 + idiomas .075 = 0.85.
+        // Se pierde el peso de idiomas: (0.85 - 0.075) / 0.85 = 0.9118 → 91.18% (afinidad no aplica → factor 1.0).
+        assertEquals(91.18, engine.calculateScore(c, vacancy()), 0.05);
     }
 
     @Test
@@ -177,8 +178,9 @@ class MatchingEngineTest {
 
         MatchBreakdown b = engine.calculateBreakdown(c, v);
         assertEquals(0.5, b.experienceScore(), 0.01);
-        // Pierde la mitad del peso de experiencia (0.30/2 = 0.15) sobre el denominador 1.0 → 0.85
-        assertEquals(85.0, b.totalScore(), 0.1);
+        // Pierde la mitad del peso de experiencia (0.25/2 = 0.125) sobre el denominador 0.85:
+        // (0.85 - 0.125) / 0.85 = 0.8529 → 85.29%.
+        assertEquals(85.29, b.totalScore(), 0.1);
     }
 
     @Test
@@ -349,6 +351,45 @@ class MatchingEngineTest {
         assertEquals(1.0, engine.calculateBreakdown(c, v).salaryScore(), 0.01);
     }
 
+    // ── Ubicación (criterio location, contexto paceño) ──
+
+    @Test
+    void ubicacionMismaCiudadEsPerfecta() {
+        CandidateProfileModel c = candidate();
+        c.setLocation("La Paz");
+        VacancyModel v = vacancy();
+        v.setLocation("La Paz");
+        assertEquals(1.0, engine.calculateBreakdown(c, v).locationScore(), 0.01);
+    }
+
+    @Test
+    void ubicacionLaPazElAltoDaCreditoParcial() {
+        CandidateProfileModel c = candidate();
+        c.setLocation("La Paz");
+        VacancyModel v = vacancy();
+        v.setLocation("El Alto"); // conurbación → 0.5
+        assertEquals(0.5, engine.calculateBreakdown(c, v).locationScore(), 0.01);
+    }
+
+    @Test
+    void ubicacionCiudadDistintaNoCoincide() {
+        CandidateProfileModel c = candidate();
+        c.setLocation("La Paz");
+        VacancyModel v = vacancy();
+        v.setLocation("Cochabamba"); // fuera del área metropolitana → 0.0
+        assertEquals(0.0, engine.calculateBreakdown(c, v).locationScore(), 0.01);
+    }
+
+    @Test
+    void vacanteSinUbicacionNoPenaliza() {
+        // La vacante no fija ubicación (remota/sin restricción): el criterio no aplica,
+        // aunque el candidato esté en otra ciudad el total sigue siendo 100.
+        CandidateProfileModel c = candidate();
+        c.setLocation("El Alto");
+        VacancyModel v = vacancy(); // sin location
+        assertEquals(100.0, engine.calculateBreakdown(c, v).totalScore(), 0.01);
+    }
+
     // ── Pesos configurables ──
 
     @Test
@@ -357,6 +398,7 @@ class MatchingEngineTest {
         w.setTechnical(1.0); // todo el peso de ajuste en técnicas
         w.setSoft(0.0);
         w.setExperience(0.0);
+        w.setLocation(0.0);
         w.setSalary(0.0);
         w.setWorkType(0.0);
         w.setLanguage(0.0);

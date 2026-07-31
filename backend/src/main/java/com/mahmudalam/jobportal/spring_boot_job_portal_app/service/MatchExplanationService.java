@@ -93,6 +93,7 @@ public class MatchExplanationService {
         sb.append(".\n");
         sb.append("Idiomas coincidentes: ").append(fmt(b.matchedLanguages())).append(".\n");
         sb.append("Idiomas faltantes: ").append(fmt(b.missingLanguages())).append(".\n");
+        sb.append("Compatibilidad de ubicación: ").append(Math.round(b.locationScore() * 100)).append("%.\n");
         return sb.toString();
     }
 
@@ -114,6 +115,11 @@ public class MatchExplanationService {
         }
         if (!b.missingLanguages().isEmpty()) {
             sb.append("Idiomas pendientes: ").append(fmt(b.missingLanguages())).append(". ");
+        }
+        if (b.locationScore() < 1.0) {
+            sb.append("Ubicación: ")
+              .append(b.locationScore() >= 0.5 ? "cercana (área metropolitana La Paz–El Alto)" : "en otra ciudad")
+              .append(". ");
         }
         return sb.toString().trim();
     }

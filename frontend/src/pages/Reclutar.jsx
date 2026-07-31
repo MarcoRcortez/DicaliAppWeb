@@ -15,6 +15,7 @@ const emptyForm = {
   minExperienceYears: 0,
   salaryRange: { min: 0, max: 0 },
   workAvailability: "tiempo completo",
+  location: "",
   closingDate: "", status: "Abierta",
 };
 
@@ -163,6 +164,7 @@ const Reclutar = () => {
       minExperienceYears: v.minExperienceYears ?? 0,
       salaryRange: v.salaryRange || { min: 0, max: 0 },
       workAvailability: v.workAvailability || "tiempo completo",
+      location: v.location || "",
       closingDate: v.closingDate || "",
       status: v.status || "Abierta",
     });
@@ -333,6 +335,15 @@ const Reclutar = () => {
                   <input type="number" value={form.salaryRange.min} onChange={(e) => handleChange("salaryRange", { ...form.salaryRange, min: +e.target.value })} placeholder="Min" className="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <input type="number" value={form.salaryRange.max} onChange={(e) => handleChange("salaryRange", { ...form.salaryRange, max: +e.target.value })} placeholder="Max" className="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Ubicación del puesto</label>
+                <select value={form.location} onChange={(e) => handleChange("location", e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Cualquiera / Remota</option>
+                  <option value="La Paz">La Paz</option>
+                  <option value="El Alto">El Alto</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

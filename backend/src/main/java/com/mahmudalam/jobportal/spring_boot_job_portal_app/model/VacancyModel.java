@@ -51,6 +51,9 @@ public class VacancyModel {
     /** "medio tiempo" | "tiempo completo" */
     private String workAvailability;
 
+    /** Ubicación del puesto ("La Paz" | "El Alto"). Nullable/vacío = remota o sin restricción. */
+    private String location;
+
     private LocalDate closingDate;
 
     /** "Abierta" | "Cerrada" */

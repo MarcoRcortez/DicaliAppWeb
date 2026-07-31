@@ -16,12 +16,14 @@ import org.springframework.stereotype.Component;
 @Data
 @Slf4j
 public class MatchingWeightsProperties {
-    // Pesos de los criterios de AJUSTE (deben sumar 1.0). La experiencia pesa más que las técnicas.
-    private double experience = 0.30;
-    private double technical = 0.25;
-    private double soft = 0.20;
-    private double salary = 0.10;
-    private double workType = 0.075;
+    // Pesos de los criterios de AJUSTE (deben sumar 1.0). La experiencia pesa más que las técnicas
+    // y la ubicación pondera el contexto laboral paceño (La Paz / El Alto).
+    private double experience = 0.25;
+    private double technical = 0.22;
+    private double soft = 0.15;
+    private double location = 0.15;
+    private double salary = 0.08;
+    private double workType = 0.075; // disponibilidad horaria (ver MatchingEngine.matchWorkType)
     private double language = 0.075;
 
     /**
@@ -33,7 +35,7 @@ public class MatchingWeightsProperties {
 
     @PostConstruct
     public void validateSum() {
-        double sum = experience + technical + soft + salary + workType + language;
+        double sum = experience + technical + soft + location + salary + workType + language;
         if (Math.abs(sum - 1.0) > 0.005) {
             log.warn("matching.weights.* (criterios de ajuste) no suman 1.0 (suman {}). Los scores pueden exceder o no alcanzar el 100%.", sum);
         }
