@@ -35,3 +35,6 @@ build/
 ### MY ###
 application.properties
 .env
+
+### Node (basura del backend Express eliminado; no pertenece a un proyecto Maven) ###
+node_modules/
