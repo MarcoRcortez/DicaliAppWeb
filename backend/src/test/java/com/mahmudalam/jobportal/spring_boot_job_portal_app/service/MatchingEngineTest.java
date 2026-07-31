@@ -415,6 +415,30 @@ class MatchingEngineTest {
         return ce;
     }
 
+    /** Afinidad entre un cargo de la trayectoria del candidato y el título de la vacante. */
+    private double affinity(String trajectory, String role) {
+        CandidateProfileModel c = new CandidateProfileModel();
+        c.setWorkExperience(List.of(expWithTitle(trajectory, "2020-01-01", "2023-01-01")));
+        VacancyModel v = new VacancyModel();
+        v.setJobTitle(role);
+        return engine.calculateBreakdown(c, v).affinityScore();
+    }
+
+    @Test
+    void afinidadReconoceVariantesMorfologicasDelEspanol() {
+        assertTrue(affinity("Diseñador Gráfico", "Diseño") > 0, "diseño/diseñador");
+        assertTrue(affinity("Contabilidad", "Contador") > 0, "contador/contabilidad");
+        assertTrue(affinity("Enfermero", "Enfermería") > 0, "enfermería/enfermero");
+        assertTrue(affinity("Administrativo", "Administración") > 0, "administración/administrativo");
+    }
+
+    @Test
+    void afinidadNoUneRubrosNoRelacionadosPorPrefijo() {
+        // "contador" y "contaminación" comparten los 5 primeros caracteres pero son rubros
+        // distintos: la igualdad de raíz (cont vs contamin) NO los une.
+        assertEquals(0.0, affinity("Contaminación Ambiental", "Contador"), 0.001);
+    }
+
     @Test
     void priorizaVacantesAfinesAlPerfilDelCandidato() {
         CandidateProfileModel sec = secretaria();

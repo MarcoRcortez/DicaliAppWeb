@@ -3,6 +3,7 @@ package com.mahmudalam.jobportal.spring_boot_job_portal_app.service;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.config.MatchingWeightsProperties;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.model.*;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.repository.MatchRepository;
+import com.mahmudalam.jobportal.spring_boot_job_portal_app.util.TextFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -196,11 +197,16 @@ public class MatchingEngine {
             return new SkillMatchResult(1.0, new ArrayList<>(), new ArrayList<>());
         }
         Set<String> cand = candidateKeywords(c);
+        // Raíces morfológicas de la trayectoria del candidato (para emparejar variantes del español).
+        Set<String> candStems = new HashSet<>();
+        for (String k : cand) candStems.add(TextFormat.morphStem(k));
+
         List<String> matched = new ArrayList<>();
         List<String> missing = new ArrayList<>();
         for (String r : role) {
-            boolean hit = cand.contains(r) || cand.stream().anyMatch(k ->
-                    (r.length() >= 4 && k.contains(r)) || (k.length() >= 4 && r.contains(k)));
+            String rStem = TextFormat.morphStem(r);
+            // Coincidencia exacta de token o igualdad de raíz morfológica (raíz >= 4 para no unir rubros ajenos).
+            boolean hit = cand.contains(r) || (rStem.length() >= 4 && candStems.contains(rStem));
             if (hit) matched.add(r); else missing.add(r);
         }
         double score = (double) matched.size() / role.size();
