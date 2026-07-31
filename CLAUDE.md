@@ -66,12 +66,13 @@ Backend Java package root: `bo.edu.dicali.recruitment`.
     (title/company/start/end/current), `educations`, `technicalSkills` (`SkillTag`: name + level
     `BASICO|INTERMEDIO|AVANZADO|EXPERTO`), `softSkills`, `languages` (`LanguageEntry`: name + level
     `A1..C2|Nativo`), `certifications` (`CertificationEntry`: name/institution/year), `expectedSalary`,
-    `workType`, `availability`, `profileComplete`, etc.
+    `workType` (modality), `workSchedule` (used by the matching), `availability`, `location`
+    (`La Paz`/`El Alto`), `profileComplete`, etc.
   - `VacancyModel` (`vacancies`) — `jobTitle`, `department`, `description` (UI-capped at 20 words),
     `requiredTechnicalSkills` (`SkillTag`), `desiredSoftSkills`, `requiredLanguages` (`LanguageEntry`),
     `desiredCertifications`, `experienceLevel` (coarse label) **and** `minExperienceYears` (numeric,
-    nullable — used for scoring), `salaryRange`, `workAvailability`, `status` (`Abierta`/`Cerrada`),
-    `recruiterId`.
+    nullable — used for scoring), `salaryRange`, `workAvailability` (schedule), `location` (nullable —
+    blank = remote/any), `status` (`Abierta`/`Cerrada`), `recruiterId`.
   - `MatchModel` (`matches`) — persisted match: `candidateId`, `vacancyId`, `recruiterId`, `score`,
     `status` (`PENDING`/`MATCHED`/`REJECTED`), `candidateNotified`, a snapshot of vacancy fields, and
     `explanation`/`explanationGeneratedAt` (LLM explanation cache).
@@ -86,12 +87,20 @@ Backend Java package root: `bo.edu.dicali.recruitment`.
   profiles/companies). Controllers persist the **full `@RequestBody` model** via `.save()`, so adding a
   new model field needs **no controller change**.
 - **`service/` (live)**:
-  - `MatchingEngine` — the real matching engine. Weighted score over 6 criteria, weights **configurable**
-    via `matching.weights.*` in `application.properties` (defaults: technical 0.55, soft 0.20,
-    experience 0.10, salary 0.05, workType 0.05, language 0.05; a startup `@PostConstruct` logs a WARN if
-    they don't sum to ~1.0). Technical/soft/language use name + level comparison; experience uses actual
-    years computed from `workExperience` dates with partial credit against `minExperienceYears`.
-    `calculateBreakdown(candidate, vacancy)` returns a `MatchBreakdown`; `calculateScore` delegates to it.
+  - `MatchingEngine` — the real matching engine. **Deterministic** weighted score over the *fit* criteria,
+    times a **vocational-affinity multiplier**. Weights **configurable** via `matching.weights.*`
+    (defaults, summing to 1.0: experience 0.25, technical 0.22, soft 0.15, **location 0.15**, salary 0.08,
+    workType 0.075, language 0.075; a startup `@PostConstruct` logs a WARN if they don't sum to ~1.0). Only
+    the criteria the vacancy actually specifies are counted (the weighted average is **renormalized** over
+    those that apply). **Affinity is NOT a weight**: it is built from the candidate's job titles + education
+    + certifications vs. the vacancy's role words (with light Spanish morphological stemming in
+    `util/TextFormat.morphStem`) and **multiplies** the fit score with a floor `affinity-floor` (0.10), so a
+    candidate unrelated to the role drops sharply (a cook never matches a design role). Technical/soft/
+    language use name + level comparison; experience uses actual years vs `minExperienceYears` (partial
+    credit); the `workType` criterion compares the candidate's `workSchedule` against the vacancy's
+    `workAvailability` (schedule, not modality); `location` models the La Paz–El Alto metro area (partial
+    credit for the conurbation). `calculateBreakdown(candidate, vacancy)` returns a `MatchBreakdown`;
+    `calculateScore` delegates to it.
   - `OllamaService` — client for a local Ollama instance (`config/OllamaProperties`+`OllamaConfig` define
     the `RestTemplate` bean and `ollama.*` config). **Never throws**: any failure (Ollama down, timeout,
     bad JSON) returns `Optional.empty()` so matching keeps working without the LLM.
@@ -113,8 +122,9 @@ Backend Java package root: `bo.edu.dicali.recruitment`.
     (browse vacancies + see compatibility % + "¿Por qué este match?" explanation), `/candidate/curriculum`
     `MiCurriculum.jsx` (structured CV editor + PDF export).
   - Company (role `RECRUITER`): `/company` `CompanyDashboard`, `/company/postulantes` `Postulantes.jsx`
-    (ranked candidates + explanation), `/company/mi-empresa` `MiEmpresa`, `/company/reclutar`
-    `Reclutar.jsx` (create/edit vacancy: skills, languages, certifications, min-years).
+    (ranked candidates + explanation, applicant CV as PDF, "solo interesados" filter),
+    `/company/mi-empresa` `MiEmpresa`, `/company/reclutar` `Reclutar.jsx` (create/edit vacancy: skills,
+    languages, certifications, min-years, **location**), `/company/reportes` `Reportes.jsx`.
   - `/admin` `AdminPanel` (role `ADMIN`), `*` `NotFound`.
   - Live `components/`: only `Navbar` and `ProtectedRoute` (plus page-local UI).
 - `api/api.js` — single source of truth for API calls (axios instance that injects the JWT). Functions
