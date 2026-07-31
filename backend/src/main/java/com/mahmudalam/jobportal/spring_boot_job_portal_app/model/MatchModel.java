@@ -21,6 +21,9 @@ public class MatchModel {
 
     private double score;
 
+    /** Afinidad con el rubro (0..1). Se persiste para poder recomendar por afinidad. */
+    private double affinityScore;
+
     /**
      * PENDING  - match calculado, empresa no actuó
      * MATCHED  - empresa hizo match con el candidato

@@ -44,7 +44,7 @@ public class MatchingEngine {
     }
 
     private void upsertMatch(CandidateProfileModel candidate, VacancyModel vacancy) {
-        double score = calculateScore(candidate, vacancy);
+        MatchBreakdown breakdown = calculateBreakdown(candidate, vacancy);
 
         MatchModel match = matchRepository
                 .findByCandidateIdAndVacancyId(candidate.getId(), vacancy.getId())
@@ -54,7 +54,8 @@ public class MatchingEngine {
         match.setVacancyId(vacancy.getId());
         match.setRecruiterId(vacancy.getRecruiterId());
         match.setCompanyName(vacancy.getCompanyName());
-        match.setScore(score);
+        match.setScore(breakdown.totalScore());
+        match.setAffinityScore(breakdown.affinityScore());
         match.setCalculatedAt(LocalDateTime.now());
 
         // Solo actualizar snapshot si es nuevo

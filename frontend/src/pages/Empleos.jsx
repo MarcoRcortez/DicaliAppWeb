@@ -12,6 +12,7 @@ import {
   getCompanyProfile,
   getMatchExplanation,
   applyToVacancy,
+  runMatchingForCandidate,
 } from "../api/api";
 import { titleCase } from "../utils/format";
 
@@ -74,6 +75,9 @@ const Empleos = () => {
       const profileRes = await getCandidateProfile(userId);
       const cid = profileRes.data.id;
       setCandidateId(cid);
+
+      // Recalcular la compatibilidad contra las vacantes abiertas para mostrar scores al día
+      try { await runMatchingForCandidate(cid); } catch { /* sigue con lo persistido */ }
 
       const matchRes = await getConfirmedMatchesCandidate(cid);
       setMatches(matchRes.data);
@@ -156,9 +160,12 @@ const Empleos = () => {
       return scoreOf(b) - scoreOf(a); // por compatibilidad (por defecto)
     });
 
-  /** Top 3 vacantes recomendadas por el motor (independiente de los filtros activos) */
+  /**
+   * Recomendadas: solo vacantes con AFINIDAD a la trayectoria del candidato
+   * (un puesto de otro rubro nunca se recomienda), ordenadas por compatibilidad.
+   */
   const recomendadas = [...vacancies]
-    .filter((v) => scoreOf(v) >= 60)
+    .filter((v) => (candidateScores[v.id]?.affinityScore ?? 0) > 0)
     .sort((a, b) => scoreOf(b) - scoreOf(a))
     .slice(0, 3);
 
