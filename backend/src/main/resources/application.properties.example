@@ -3,7 +3,7 @@
 # valores marcados como CAMBIAR_*. El application.properties real está en .gitignore
 # porque contiene secretos.
 
-spring.application.name=spring-boot-job-portal-app
+spring.application.name=dicali-recruitment
 
 # ── MongoDB (local) ──
 spring.data.mongodb.uri=mongodb://localhost:27017/job_portal_db
@@ -54,4 +54,4 @@ matching.weights.language=0.075
 matching.weights.affinity-floor=0.10
 
 # ── Logging ──
-logging.level.com.mahmudalam=INFO
+logging.level.bo.edu.dicali=INFO

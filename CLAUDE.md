@@ -48,7 +48,7 @@ There is no frontend test runner configured.
 
 ## Architecture
 
-Backend Java package root: `com.mahmudalam.jobportal.spring_boot_job_portal_app`.
+Backend Java package root: `bo.edu.dicali.recruitment`.
 
 ### Backend — the LIVE system
 

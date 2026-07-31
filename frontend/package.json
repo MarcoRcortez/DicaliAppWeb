@@ -1,9 +1,8 @@
 {
-  "name": "frontend",
-  "description": "This is a Job Portal App using Java Spring Boot, MongoDB and React.js",
+  "name": "dicali-frontend",
+  "description": "DICALI - Plataforma de Reclutamiento Inteligente (Spring Boot + MongoDB + React). Proyecto de Grado.",
   "author": {
-    "name": "Mahmud Alam",
-    "url": "https://mahmudalam.com/"
+    "name": "Marco Rodolfo Cortez"
   },
   "private": true,
   "version": "0.0.0",

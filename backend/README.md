@@ -40,7 +40,7 @@ mvn package             # genera el .jar
 
 ## Estructura
 
-Paquete raíz: `com.mahmudalam.jobportal.spring_boot_job_portal_app`.
+Paquete raíz: `bo.edu.dicali.recruitment`.
 
 - **`security/`** — `SecurityConfig`, `JwtAuthFilter`, `JwtUtil`. Define qué endpoints son públicos y
   cuáles requieren autenticación o rol `ADMIN`.

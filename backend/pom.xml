@@ -8,10 +8,10 @@
 		<version>3.2.3</version>
 		<relativePath/>
 	</parent>
-	<groupId>com.mahmudalam.jobportal</groupId>
-	<artifactId>spring-boot-job-portal-app</artifactId>
+	<groupId>bo.edu.dicali</groupId>
+	<artifactId>dicali-recruitment</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>spring-boot-job-portal-app</name>
+	<name>dicali-recruitment</name>
 	<description>DICALI - Plataforma de Reclutamiento Inteligente</description>
 
 	<properties>
