@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import useAuthStore from "../store/authStore";
 import { getCandidateProfile, saveCandidateProfile, deleteCandidateProfile } from "../api/api";
+import ImageCropper from "../components/ImageCropper";
 import jsPDF from "jspdf";
 
 const SOFT_SKILLS_OPTIONS = [
@@ -40,6 +41,7 @@ const MiCurriculum = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [cropSrc, setCropSrc] = useState(null); // imagen en edición (modal de recorte)
 
   const [newSkillName, setNewSkillName] = useState("");
   const [newSkillLevel, setNewSkillLevel] = useState("INTERMEDIO");
@@ -65,20 +67,12 @@ const MiCurriculum = () => {
     setErrors((p) => ({ ...p, [field]: null }));
   };
 
+  // Al elegir un archivo, abre el editor de recorte (no se estira la imagen)
   const handlePhoto = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const canvas = document.createElement("canvas");
-    const img = new Image();
-    img.onload = () => {
-      const size = 300;
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, size, size);
-      handleChange("photoBase64", canvas.toDataURL("image/webp", 0.8));
-    };
-    img.src = URL.createObjectURL(file);
+    setCropSrc(URL.createObjectURL(file));
+    e.target.value = ""; // permite volver a elegir el mismo archivo
   };
 
   // ── SKILLS ──
@@ -321,6 +315,14 @@ const MiCurriculum = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {cropSrc && (
+        <ImageCropper
+          src={cropSrc}
+          shape="circle"
+          onCancel={() => setCropSrc(null)}
+          onConfirm={(base64) => { handleChange("photoBase64", base64); setCropSrc(null); }}
+        />
+      )}
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-black text-blue-950">Mi Curriculum</h1>

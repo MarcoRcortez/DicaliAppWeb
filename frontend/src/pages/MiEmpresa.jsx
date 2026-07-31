@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import useAuthStore from "../store/authStore";
 import { getCompanyProfile, saveCompanyProfile, deleteCompanyProfile } from "../api/api";
+import ImageCropper from "../components/ImageCropper";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -44,6 +45,7 @@ const MiEmpresa = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [cropSrc, setCropSrc] = useState(null);
 
   useEffect(() => { loadProfile(); }, [userId]);
 
@@ -68,21 +70,12 @@ const MiEmpresa = () => {
     setForm((p) => ({ ...p, latitude: position[0], longitude: position[1] }));
   }, [position]);
 
-  // ── Logo (redimensiona a WebP base64, mismo patrón que la foto del candidato) ──
+  // Al elegir un archivo, abre el editor de recorte (zoom + posición, sin deformar)
   const handleLogo = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const canvas = document.createElement("canvas");
-    const img = new Image();
-    img.onload = () => {
-      const max = 300;
-      const scale = Math.min(max / img.width, max / img.height, 1);
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-      handleChange("logoBase64", canvas.toDataURL("image/webp", 0.8));
-    };
-    img.src = URL.createObjectURL(file);
+    setCropSrc(URL.createObjectURL(file));
+    e.target.value = "";
   };
 
   // ── Geocodificación (OpenStreetMap / Nominatim) ──
@@ -146,6 +139,14 @@ const MiEmpresa = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {cropSrc && (
+        <ImageCropper
+          src={cropSrc}
+          shape="square"
+          onCancel={() => setCropSrc(null)}
+          onConfirm={(base64) => { handleChange("logoBase64", base64); setCropSrc(null); }}
+        />
+      )}
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-black text-blue-950">Mi Empresa</h1>
