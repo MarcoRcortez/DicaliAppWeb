@@ -170,37 +170,6 @@ const Reportes = () => {
             </div>
           </div>
         )}
-
-        {/* Tabla por vacante */}
-        {porVacante.length > 0 && (
-          <div className="bg-white rounded-2xl shadow p-6 overflow-x-auto">
-            <h3 className="text-sm font-bold text-gray-700 mb-4">Detalle por vacante</h3>
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-                <tr>
-                  <th className="p-3 text-left">Vacante</th>
-                  <th className="p-3 text-center">Postulados</th>
-                  <th className="p-3 text-center">Conectados</th>
-                  <th className="p-3 text-center">Rechazados</th>
-                  <th className="p-3 text-center">Sin responder</th>
-                  <th className="p-3 text-center">Compatib. prom.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {porVacante.map((v) => (
-                  <tr key={v.vacancyId} className="border-t border-gray-100">
-                    <td className="p-3 font-medium text-gray-800">{titleCase(v.jobTitle)}</td>
-                    <td className="p-3 text-center">{v.postulados}</td>
-                    <td className="p-3 text-center text-green-600 font-bold">{v.conectados}</td>
-                    <td className="p-3 text-center text-red-500">{v.rechazados}</td>
-                    <td className="p-3 text-center text-amber-600 font-bold">{v.sinResponder}</td>
-                    <td className="p-3 text-center">{v.compatibilidadProm}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );
