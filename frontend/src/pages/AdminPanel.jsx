@@ -7,6 +7,7 @@ import {
   getAdminStats, getAdminUsers, deleteAdminUser, updateAdminUser, createAdminUser,
   getAdminVacancies, deleteAdminVacancy,
   getAdminProfiles, deleteAdminProfile,
+  normalizeData,
 } from "../api/api";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
@@ -21,6 +22,20 @@ const AdminPanel = () => {
   const [profiles, setProfiles] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [normalizing, setNormalizing] = useState(false);
+
+  const handleNormalize = async () => {
+    if (!confirm("Se corregirán las mayúsculas de títulos, nombres, empresas, educación y certificaciones en todos los registros. ¿Continuar?")) return;
+    setNormalizing(true);
+    try {
+      const res = await normalizeData();
+      const d = res.data;
+      alert(`Ortografía normalizada.\nVacantes: ${d.vacantes}\nCurrículos: ${d.curriculos}\nEmpresas: ${d.empresas}`);
+    } catch {
+      alert("No se pudo normalizar. Verifica tu sesión de administrador.");
+    }
+    setNormalizing(false);
+  };
 
   // Modales
   const [editUser, setEditUser] = useState(null);
@@ -243,7 +258,12 @@ const AdminPanel = () => {
           {/* ── INICIO ── */}
           {activeTab === "inicio" && stats && (
             <motion.div key="inicio" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <h2 className="text-3xl font-black text-blue-950 mb-8">Bienvenido al Dashboard</h2>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-3xl font-black text-blue-950">Bienvenido al Dashboard</h2>
+                <button onClick={handleNormalize} disabled={normalizing} className="bg-amber-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-amber-600 transition-all disabled:opacity-50">
+                  {normalizing ? "Normalizando..." : "Normalizar ortografía de datos"}
+                </button>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 {[
                   { label: "Total Usuarios", value: stats.totalUsers, border: "border-blue-500" },

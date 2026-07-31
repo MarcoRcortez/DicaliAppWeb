@@ -24,6 +24,9 @@ public class CompanyProfileModel {
     private String address;
     private String email;
 
+    /** Logo de la empresa (imagen en base64, WebP) */
+    private String logoBase64;
+
     /** Coordenadas para el minimapa */
     private double latitude;
     private double longitude;

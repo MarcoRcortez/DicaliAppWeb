@@ -2,6 +2,7 @@ package com.mahmudalam.jobportal.spring_boot_job_portal_app.controller;
 
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.model.*;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.repository.*;
+import com.mahmudalam.jobportal.spring_boot_job_portal_app.service.NormalizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ public class AdminController {
     private final CompanyProfileRepository companyProfileRepository;
     private final VacancyRepository vacancyRepository;
     private final MatchRepository matchRepository;
+    private final NormalizationService normalizationService;
 
     // ─── ESTADÍSTICAS PARA DASHBOARD ───────────────────────────────────────────
 
@@ -124,5 +126,39 @@ public class AdminController {
     public ResponseEntity<?> deleteCompany(@PathVariable String id) {
         companyProfileRepository.deleteById(id);
         return ResponseEntity.ok(Map.of("message", "Empresa eliminada."));
+    }
+
+    // ─── NORMALIZACIÓN DE ORTOGRAFÍA (migración única) ──────────────────────────
+
+    /**
+     * Corrige las mayúsculas de los campos clave en TODOS los registros existentes
+     * (vacantes, currículos y empresas), preservando acrónimos. Idempotente.
+     */
+    @PostMapping("/normalize-data")
+    public ResponseEntity<?> normalizeData() {
+        int vac = 0, prof = 0, comp = 0;
+
+        for (VacancyModel v : vacancyRepository.findAll()) {
+            normalizationService.normalize(v);
+            vacancyRepository.save(v);
+            vac++;
+        }
+        for (CandidateProfileModel p : candidateProfileRepository.findAll()) {
+            normalizationService.normalize(p);
+            candidateProfileRepository.save(p);
+            prof++;
+        }
+        for (CompanyProfileModel c : companyProfileRepository.findAll()) {
+            normalizationService.normalize(c);
+            companyProfileRepository.save(c);
+            comp++;
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Normalización completada.",
+                "vacantes", vac,
+                "curriculos", prof,
+                "empresas", comp
+        ));
     }
 }

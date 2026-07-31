@@ -1,4 +1,5 @@
 import axios from "axios";
+import useAuthStore from "../store/authStore";
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -7,6 +8,27 @@ API.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// Sesión expirada: si teníamos token y el backend responde 401/403 en una ruta
+// autenticada, la sesión ya no es válida → cerrar sesión y volver a iniciar.
+let sessionExpiredHandled = false;
+API.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    const status = err.response?.status;
+    const url = err.config?.url || "";
+    const hadToken = !!localStorage.getItem("token");
+    if ((status === 401 || status === 403) && hadToken && !url.includes("/auth")) {
+      if (!sessionExpiredHandled) {
+        sessionExpiredHandled = true;
+        useAuthStore.getState().logout();
+        alert("Tu sesión expiró. Por favor inicia sesión nuevamente.");
+        window.location.href = "/";
+      }
+    }
+    return Promise.reject(err);
+  }
+);
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 export const registerUser = (data) => API.post("/auth/register", data);
@@ -63,5 +85,6 @@ export const deleteAdminVacancy = (id) => API.delete(`/admin/vacancies/${id}`);
 export const getAdminProfiles = () => API.get("/admin/profiles");
 export const deleteAdminProfile = (id) => API.delete(`/admin/profiles/${id}`);
 export const getAdminCompanies = () => API.get("/admin/companies");
+export const normalizeData = () => API.post("/admin/normalize-data");
 
 export default API;

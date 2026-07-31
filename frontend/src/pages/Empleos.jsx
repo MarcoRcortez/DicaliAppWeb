@@ -330,7 +330,11 @@ const Empleos = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setContactPopup(null)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-white rounded-3xl p-8 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl">🏢</div>
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl overflow-hidden">
+                  {contactPopup.company.logoBase64
+                    ? <img src={contactPopup.company.logoBase64} alt="Logo" className="w-full h-full object-contain" />
+                    : "🏢"}
+                </div>
                 <h2 className="text-xl font-black text-blue-950">Contactar Empresa</h2>
                 <p className="text-sm text-gray-400 mt-1">Puesto: {titleCase(contactPopup.vacancy.jobTitle)}</p>
               </div>
@@ -338,7 +342,7 @@ const Empleos = () => {
               <div className="space-y-4">
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Empresa</p>
-                  <p className="text-lg font-bold text-blue-900">{contactPopup.company.companyName}</p>
+                  <p className="text-lg font-bold text-blue-900">{titleCase(contactPopup.company.companyName)}</p>
                   {contactPopup.company.description && <p className="text-xs text-gray-500 mt-1">{contactPopup.company.description}</p>}
                 </div>
 

@@ -3,6 +3,7 @@ package com.mahmudalam.jobportal.spring_boot_job_portal_app.controller;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.model.*;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.repository.*;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.service.MatchingEngine;
+import com.mahmudalam.jobportal.spring_boot_job_portal_app.service.NormalizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ public class VacancyController {
     private final CompanyProfileRepository companyProfileRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final MatchingEngine matchingEngine;
+    private final NormalizationService normalizationService;
 
     /** Vacantes públicas (EMPLEOS page - candidatos) */
     @GetMapping("/public/open")
@@ -55,6 +57,7 @@ public class VacancyController {
 
             vacancy.setCreatedAt(LocalDateTime.now());
             if (vacancy.getStatus() == null) vacancy.setStatus("Abierta");
+            normalizationService.normalize(vacancy);
 
             VacancyModel saved = vacancyRepository.save(vacancy);
 
@@ -74,6 +77,7 @@ public class VacancyController {
         return vacancyRepository.findById(id)
                 .map(existing -> {
                     vacancy.setId(id);
+                    normalizationService.normalize(vacancy);
                     return ResponseEntity.ok(vacancyRepository.save(vacancy));
                 })
                 .orElse(ResponseEntity.notFound().build());

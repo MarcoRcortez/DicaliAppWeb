@@ -5,6 +5,7 @@ import com.mahmudalam.jobportal.spring_boot_job_portal_app.model.VacancyModel;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.repository.CandidateProfileRepository;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.repository.VacancyRepository;
 import com.mahmudalam.jobportal.spring_boot_job_portal_app.service.MatchingEngine;
+import com.mahmudalam.jobportal.spring_boot_job_portal_app.service.NormalizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ public class CandidateProfileController {
     private final CandidateProfileRepository profileRepository;
     private final VacancyRepository vacancyRepository;
     private final MatchingEngine matchingEngine;
+    private final NormalizationService normalizationService;
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getByUserId(@PathVariable String userId) {
@@ -41,6 +43,7 @@ public class CandidateProfileController {
         if (existing != null) {
             profile.setId(existing.getId());
         }
+        normalizationService.normalize(profile);
         CandidateProfileModel saved = profileRepository.save(profile);
 
         // Si el perfil está completo, lanzar matching automático

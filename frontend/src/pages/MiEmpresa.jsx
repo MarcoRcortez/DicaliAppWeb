@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import useAuthStore from "../store/authStore";
 import { getCompanyProfile, saveCompanyProfile, deleteCompanyProfile } from "../api/api";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -15,35 +14,51 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const LocationPicker = ({ position, setPosition }) => {
+// Al hacer clic en el mapa: fija el marcador y reverse-geocodifica la dirección
+const LocationPicker = ({ setPosition, onReverse }) => {
   useMapEvents({
     click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
+      const p = [e.latlng.lat, e.latlng.lng];
+      setPosition(p);
+      onReverse(p);
     },
   });
-  return position ? <Marker position={position} /> : null;
+  return null;
+};
+
+// Mueve el centro del mapa cuando cambia la posición (p. ej. al geocodificar)
+const Recenter = ({ position }) => {
+  const map = useMap();
+  useEffect(() => { if (position) map.setView(position, map.getZoom()); }, [position, map]);
+  return null;
 };
 
 const MiEmpresa = () => {
-  const { userId } = useAuthStore();
+  const { userId, email: cuentaEmail } = useAuthStore();
   const [form, setForm] = useState({
     companyName: "", description: "", phone1: "", phone2: "",
-    address: "", email: "", latitude: -16.5, longitude: -68.15, profileComplete: false,
+    address: "", email: cuentaEmail || "", logoBase64: "",
+    latitude: -16.5, longitude: -68.15, profileComplete: false,
   });
   const [position, setPosition] = useState([-16.5, -68.15]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
 
   useEffect(() => { loadProfile(); }, [userId]);
 
   const loadProfile = async () => {
     try {
       const res = await getCompanyProfile(userId);
-      setForm(res.data);
+      // Heredar el email de la cuenta si el perfil aún no tiene uno
+      setForm({ ...res.data, email: res.data.email || cuentaEmail || "" });
       if (res.data.latitude && res.data.longitude) {
         setPosition([res.data.latitude, res.data.longitude]);
       }
-    } catch { /* primer ingreso */ }
+    } catch {
+      // Primer ingreso: dejar el email de la cuenta prellenado
+      setForm((p) => ({ ...p, email: cuentaEmail || "" }));
+    }
     setLoading(false);
   };
 
@@ -52,6 +67,51 @@ const MiEmpresa = () => {
   useEffect(() => {
     setForm((p) => ({ ...p, latitude: position[0], longitude: position[1] }));
   }, [position]);
+
+  // ── Logo (redimensiona a WebP base64, mismo patrón que la foto del candidato) ──
+  const handleLogo = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const canvas = document.createElement("canvas");
+    const img = new Image();
+    img.onload = () => {
+      const max = 300;
+      const scale = Math.min(max / img.width, max / img.height, 1);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      handleChange("logoBase64", canvas.toDataURL("image/webp", 0.8));
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  // ── Geocodificación (OpenStreetMap / Nominatim) ──
+  const geocodeAddress = async () => {
+    if (!form.address?.trim()) { alert("Escribe primero una dirección."); return; }
+    setGeoLoading(true);
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=bo&q=${encodeURIComponent(form.address)}`;
+      const res = await fetch(url, { headers: { "Accept-Language": "es" } });
+      const data = await res.json();
+      if (data.length > 0) {
+        setPosition([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+      } else {
+        alert("No se encontró la dirección. Intenta con más detalle o ubícala en el mapa.");
+      }
+    } catch {
+      alert("No se pudo buscar la dirección (¿sin conexión a internet?).");
+    }
+    setGeoLoading(false);
+  };
+
+  const reverseGeocode = async (pos) => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos[0]}&lon=${pos[1]}`;
+      const res = await fetch(url, { headers: { "Accept-Language": "es" } });
+      const data = await res.json();
+      if (data.display_name) handleChange("address", data.display_name);
+    } catch { /* sin conexión: se conserva la dirección escrita */ }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -65,7 +125,7 @@ const MiEmpresa = () => {
   };
 
   const handleClear = () => {
-    setForm({ companyName: "", description: "", phone1: "", phone2: "", address: "", email: "", latitude: -16.5, longitude: -68.15, profileComplete: false });
+    setForm({ companyName: "", description: "", phone1: "", phone2: "", address: "", email: cuentaEmail || "", logoBase64: "", latitude: -16.5, longitude: -68.15, profileComplete: false });
     setPosition([-16.5, -68.15]);
   };
 
@@ -93,6 +153,27 @@ const MiEmpresa = () => {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+          {/* LOGO */}
+          <div className="flex items-center gap-5">
+            <div className="w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden border-2 border-gray-200 flex-shrink-0 flex items-center justify-center">
+              {form.logoBase64 ? (
+                <img src={form.logoBase64} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-3xl text-gray-300">🏢</span>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Logotipo de la empresa</label>
+              <label className="inline-block bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold cursor-pointer hover:bg-blue-100">
+                Subir imagen
+                <input type="file" accept="image/*" onChange={handleLogo} className="hidden" />
+              </label>
+              {form.logoBase64 && (
+                <button onClick={() => handleChange("logoBase64", "")} className="ml-2 text-xs text-red-400 hover:text-red-600 font-bold">Quitar</button>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Nombre de la empresa</label>
             <input value={form.companyName} onChange={(e) => handleChange("companyName", e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: DICALI S.R.L." />
@@ -124,7 +205,13 @@ const MiEmpresa = () => {
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Dirección</label>
-            <input value={form.address} onChange={(e) => handleChange("address", e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Dirección de la empresa" />
+            <div className="flex gap-2">
+              <input value={form.address} onChange={(e) => handleChange("address", e.target.value)} className="flex-1 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Dirección de la empresa" />
+              <button onClick={geocodeAddress} disabled={geoLoading} className="bg-blue-600 text-white px-4 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-50 whitespace-nowrap">
+                {geoLoading ? "..." : "Ubicar en el mapa"}
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">Escribe la dirección y pulsa "Ubicar", o haz clic en el mapa para rellenarla automáticamente.</p>
           </div>
 
           <div>
@@ -138,7 +225,9 @@ const MiEmpresa = () => {
             <div className="rounded-xl overflow-hidden border border-gray-200 h-64">
               <MapContainer center={position} zoom={13} className="h-full w-full">
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
-                <LocationPicker position={position} setPosition={setPosition} />
+                <Marker position={position} />
+                <LocationPicker setPosition={setPosition} onReverse={reverseGeocode} />
+                <Recenter position={position} />
               </MapContainer>
             </div>
           </div>
